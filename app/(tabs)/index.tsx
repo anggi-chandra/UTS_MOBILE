@@ -6,8 +6,8 @@ import { useColorSchemeController } from '@/hooks/use-color-scheme';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Animated, FlatList, Pressable, RefreshControl, StyleSheet, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -17,10 +17,12 @@ export default function HomeScreen() {
   const { movies, deleteMovie } = useMovieStorage();
   const [refreshing, setRefreshing] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [selectedGenre, setSelectedGenre] = useState<string>('Semua');
   const { scheme, toggleScheme } = useColorSchemeController();
   
   const tintColor = useThemeColor({}, 'tint');
   const iconBg = useThemeColor({}, 'icon');
+  const textColor = useThemeColor({}, 'text');
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -37,6 +39,86 @@ export default function HomeScreen() {
 
   const handleDeleteMovie = (movieId: string) => {
     deleteMovie(movieId);
+  };
+
+  const genres = useMemo(() => {
+    const unique = Array.from(new Set(movies.map(m => m.genre)));
+    return ['Semua', ...unique];
+  }, [movies]);
+
+  const filteredMovies = useMemo(() => {
+    if (!selectedGenre || selectedGenre === 'Semua') return movies;
+    return movies.filter(m => m.genre === selectedGenre);
+  }, [movies, selectedGenre]);
+
+  // Chip dengan animasi scale dan hover (web)
+  const GenreChip: React.FC<{ label: string; active: boolean; onPress: () => void }> = ({ label, active, onPress }) => {
+    const isDark = scheme === 'dark';
+    const scale = useRef(new Animated.Value(1)).current;
+    const [hovered, setHovered] = useState(false);
+
+    const chipBgColor = active
+      ? tintColor
+      : (isDark ? (hovered ? '#555' : '#444') : (hovered ? '#eaeaea' : '#f0f0f0'));
+    // Hitung kontras warna teks terhadap background chip
+    const getContrastTextColor = (bg: string, fallback: string) => {
+      try {
+        if (!bg.startsWith('#')) return fallback;
+        let hex = bg.slice(1);
+        if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+        const r = parseInt(hex.substring(0, 2), 16) / 255;
+        const g = parseInt(hex.substring(2, 4), 16) / 255;
+        const b = parseInt(hex.substring(4, 6), 16) / 255;
+        const srgb = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+        const L = 0.2126 * srgb(r) + 0.7152 * srgb(g) + 0.0722 * srgb(b);
+        return L > 0.6 ? '#000' : '#fff';
+      } catch {
+        return fallback;
+      }
+    };
+    const chipTextColor = active ? getContrastTextColor(chipBgColor, '#fff') : (isDark ? '#e0e0e0' : textColor);
+    const shadowColor = isDark ? '#000' : '#888';
+    const shadowOpacity = isDark ? 0.4 : 0.2;
+    const elevation = active ? 4 : (isDark ? 3 : 2);
+
+    const handlePressIn = () => {
+      Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start();
+    };
+
+    const handlePressOut = () => {
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+    };
+
+    return (
+      <Pressable
+        onPress={onPress}
+        onHoverIn={() => setHovered(true)}
+        onHoverOut={() => setHovered(false)}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <Animated.View
+          style={[
+            styles.filterChip,
+            {
+              borderColor: active ? tintColor : 'transparent',
+              backgroundColor: chipBgColor,
+              shadowColor,
+              shadowOpacity,
+              elevation,
+              transform: [{ scale }],
+            },
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {active ? <IconSymbol name="checkmark.circle.fill" size={14} color={chipTextColor} /> : null}
+            <ThemedText style={[styles.filterChipText, { color: chipTextColor }]}>
+              {label}
+            </ThemedText>
+          </View>
+        </Animated.View>
+      </Pressable>
+    );
   };
 
   const renderHeader = () => (
@@ -92,14 +174,28 @@ export default function HomeScreen() {
     </ThemedView>
   );
 
+  const renderGenreFilter = () => (
+    <ThemedView style={styles.filterContainer}>
+      {genres.map((g) => (
+        <GenreChip
+          key={g}
+          label={g}
+          active={selectedGenre === g}
+          onPress={() => setSelectedGenre(g)}
+        />
+      ))}
+    </ThemedView>
+  );
+
   return (
     <ThemedView style={styles.container}>
       {renderHeader()}
-      {movies.length === 0 ? (
+      {renderGenreFilter()}
+      {filteredMovies.length === 0 ? (
         renderEmptyState()
       ) : (
         <FlatList
-          data={movies}
+          data={filteredMovies}
           key={`${numCols}-${showActions}`}
           keyExtractor={(item) => item.id}
           numColumns={numCols}
@@ -196,5 +292,22 @@ const styles = StyleSheet.create({
   },
   column: {
     gap: 12,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  filterChipText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

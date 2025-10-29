@@ -4,11 +4,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MOVIES } from '@/data/movies';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View, useColorScheme, Platform } from 'react-native';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Picker } from '@react-native-picker/picker';
 import Toast from 'react-native-toast-message';
 import { useBookingStorage } from '@/hooks/use-booking-storage';
+import ThemedDropdown, { DropdownItem } from '@/components/ui/themed-dropdown';
 
 type FormValues = {
   movieId: string;
@@ -21,9 +22,12 @@ export default function AddTicketScreen() {
   const params = useLocalSearchParams<{ movieId?: string }>();
   const router = useRouter();
   const { addBooking } = useBookingStorage();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const borderColor = useThemeColor({}, 'icon');
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
+  const pickerBgColor = isDark ? '#333333' : '#ffffff';
   const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     defaultValues: { movieId: '', showtime: '', tickets: '1', customerName: '' },
     mode: 'onBlur',
@@ -66,12 +70,28 @@ export default function AddTicketScreen() {
         name="movieId"
         rules={{ required: 'Film wajib dipilih' }}
         render={({ field: { onChange, value } }) => (
-          <Picker selectedValue={value} onValueChange={onChange} style={[styles.picker, { color: textColor }]} dropdownIconColor={textColor}>
-            <Picker.Item label="-- Pilih Film --" value="" />
-            {MOVIES.map(m => (
-              <Picker.Item key={m.id} label={m.title} value={m.id} />
-            ))}
-          </Picker>
+          Platform.OS === 'web' ? (
+            <ThemedDropdown
+              items={[{ label: '-- Pilih Film --', value: '' }, ...MOVIES.map(m => ({ label: m.title, value: m.id }))] as DropdownItem[]}
+              selectedValue={value}
+              onValueChange={onChange}
+            />
+          ) : (
+            <View style={[styles.pickerContainer, { backgroundColor: pickerBgColor, borderColor }]}>
+              <Picker 
+                selectedValue={value} 
+                onValueChange={onChange} 
+                style={[styles.picker, { color: textColor }]} 
+                dropdownIconColor={textColor}
+                mode="dropdown"
+              >
+                <Picker.Item label="-- Pilih Film --" value="" />
+                {MOVIES.map(m => (
+                  <Picker.Item key={m.id} label={m.title} value={m.id} />
+                ))}
+              </Picker>
+            </View>
+          )
         )}
       />
       {errors.movieId && <ThemedText style={styles.error}>{errors.movieId.message}</ThemedText>}
@@ -86,12 +106,31 @@ export default function AddTicketScreen() {
           validate: (v) => (selectedMovie && selectedMovie.showtimes.includes(v)) || 'Jadwal tidak valid',
         }}
         render={({ field: { onChange, value } }) => (
-          <Picker selectedValue={value} onValueChange={onChange} enabled={!!selectedMovie} style={[styles.picker, { color: textColor }]} dropdownIconColor={textColor}>
-            <Picker.Item label={selectedMovie ? '-- Pilih Jadwal --' : 'Pilih film dulu'} value="" />
-            {selectedMovie?.showtimes.map(t => (
-              <Picker.Item key={t} label={t} value={t} />
-            ))}
-          </Picker>
+          Platform.OS === 'web' ? (
+            <ThemedDropdown
+              items={[(selectedMovie ? { label: '-- Pilih Jadwal --', value: '' } : { label: 'Pilih film dulu', value: '' }),
+                ...((selectedMovie?.showtimes ?? []).map(t => ({ label: t, value: t })))]}
+              selectedValue={value}
+              onValueChange={onChange}
+              disabled={!selectedMovie}
+            />
+          ) : (
+            <View style={[styles.pickerContainer, { backgroundColor: pickerBgColor, borderColor }]}>
+              <Picker 
+                selectedValue={value} 
+                onValueChange={onChange} 
+                enabled={!!selectedMovie} 
+                style={[styles.picker, { color: textColor }]} 
+                dropdownIconColor={textColor}
+                mode="dropdown"
+              >
+                <Picker.Item label={selectedMovie ? '-- Pilih Jadwal --' : 'Pilih film dulu'} value="" />
+                {selectedMovie?.showtimes.map(t => (
+                  <Picker.Item key={t} label={t} value={t} />
+                ))}
+              </Picker>
+            </View>
+          )
         )}
       />
       {errors.showtime && <ThemedText style={styles.error}>{errors.showtime.message}</ThemedText>}
@@ -158,6 +197,11 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 8,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   picker: {
     borderRadius: 8,

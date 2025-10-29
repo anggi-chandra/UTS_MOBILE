@@ -10,6 +10,9 @@ export type Booking = {
   createdAt: number;
   poster?: string | number;
   customerName: string;
+  seats?: string[];
+  paymentStatus?: 'pending' | 'paid';
+  paymentMethod?: 'cash' | 'qris' | 'card';
 };
 
 const STORAGE_KEY = 'BOOKINGS_STORAGE_V1';

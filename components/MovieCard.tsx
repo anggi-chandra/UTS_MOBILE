@@ -1,11 +1,12 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, useWindowDimensions, Alert } from 'react-native';
+import { StyleSheet, TouchableOpacity, useWindowDimensions, Alert, Platform, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useColorSchemeController } from '@/hooks/use-color-scheme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Movie } from '@/data/movies';
 import Toast from 'react-native-toast-message';
@@ -26,6 +27,8 @@ export function MovieCard({ movie, index, onEdit, onDelete, showActions = false 
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
+  const iconBg = useThemeColor({}, 'icon');
+  const { scheme } = useColorSchemeController();
 
   const cardWidth = isTablet ? (width - 60) / 2 : width - 40;
 
@@ -68,11 +71,18 @@ export function MovieCard({ movie, index, onEdit, onDelete, showActions = false 
     );
   };
 
+  const isWeb = Platform.OS === 'web';
+
+  const CardComponent = isWeb ? View : Animated.View;
+  const animationProps = isWeb ? {} : {
+    entering: FadeIn.delay(index * 100),
+    exiting: FadeOut,
+    layout: Layout
+  };
+
   return (
-    <Animated.View
-      entering={FadeIn.delay(index * 100)}
-      exiting={FadeOut}
-      layout={Layout}
+    <CardComponent
+      {...animationProps}
       style={[
         styles.card,
         {
@@ -103,25 +113,42 @@ export function MovieCard({ movie, index, onEdit, onDelete, showActions = false 
       </TouchableOpacity>
       
       {showActions && (
-        <Animated.View 
-          entering={FadeIn.delay(200)}
-          style={styles.actionButtons}
-        >
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: tintColor }]}
-            onPress={handleEdit}
+        isWeb ? (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: scheme === 'dark' ? '#444' : tintColor }]}
+              onPress={handleEdit}
+            >
+              <IconSymbol name="pencil" size={16} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#ff4444' }]}
+              onPress={handleDelete}
+            >
+              <IconSymbol name="trash" size={16} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <Animated.View 
+            entering={FadeIn.delay(200)}
+            style={styles.actionButtons}
           >
-            <IconSymbol name="pencil" size={16} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: '#ff4444' }]}
-            onPress={handleDelete}
-          >
-            <IconSymbol name="trash" size={16} color="#fff" />
-          </TouchableOpacity>
-        </Animated.View>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: scheme === 'dark' ? '#444' : tintColor }]}
+              onPress={handleEdit}
+            >
+              <IconSymbol name="pencil" size={16} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#ff4444' }]}
+              onPress={handleDelete}
+            >
+              <IconSymbol name="trash" size={16} color="#fff" />
+            </TouchableOpacity>
+          </Animated.View>
+        )
       )}
-    </Animated.View>
+    </CardComponent>
   );
 }
 

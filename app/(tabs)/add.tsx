@@ -5,6 +5,7 @@ import { MOVIES } from '@/data/movies';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { StyleSheet, TextInput, View } from 'react-native';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { Picker } from '@react-native-picker/picker';
 import Toast from 'react-native-toast-message';
 import { useBookingStorage } from '@/hooks/use-booking-storage';
@@ -20,6 +21,9 @@ export default function AddTicketScreen() {
   const params = useLocalSearchParams<{ movieId?: string }>();
   const router = useRouter();
   const { addBooking } = useBookingStorage();
+  const borderColor = useThemeColor({}, 'icon');
+  const textColor = useThemeColor({}, 'text');
+  const backgroundColor = useThemeColor({}, 'background');
   const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     defaultValues: { movieId: '', showtime: '', tickets: '1', customerName: '' },
     mode: 'onBlur',
@@ -39,25 +43,20 @@ export default function AddTicketScreen() {
       Toast.show({ type: 'error', text1: 'Pilih film terlebih dahulu' });
       return;
     }
-    const total = qty * selectedMovie.price;
-    // Simpan ke riwayat pemesanan
-    const poster = typeof selectedMovie.poster === 'string' ? selectedMovie.poster : undefined;
-    addBooking({
-      movieId: selectedMovie.id,
-      title: selectedMovie.title,
-      showtime: values.showtime,
-      quantity: qty,
-      totalPrice: total,
-      poster,
-      customerName: values.customerName.trim(),
+    // Arahkan ke pemilihan kursi terlebih dahulu
+    router.push({
+      pathname: '/seat-selection',
+      params: {
+        movieId: selectedMovie.id,
+        showtime: values.showtime,
+        tickets: String(qty),
+        customerName: values.customerName.trim(),
+      },
     });
-    Toast.show({ type: 'success', text1: 'Tiket berhasil ditambahkan', text2: `${selectedMovie.title} • ${values.showtime} • ${qty} tiket • Total Rp ${total.toLocaleString('id-ID')}` });
-    // Arahkan ke tab Riwayat
-    router.push('/explore');
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { backgroundColor }] }>
       <ThemedText type="title" style={styles.header}>Tambah Tiket</ThemedText>
 
       {/* Pilih Film */}
@@ -67,7 +66,7 @@ export default function AddTicketScreen() {
         name="movieId"
         rules={{ required: 'Film wajib dipilih' }}
         render={({ field: { onChange, value } }) => (
-          <Picker selectedValue={value} onValueChange={onChange} style={styles.picker}>
+          <Picker selectedValue={value} onValueChange={onChange} style={[styles.picker, { color: textColor }]} dropdownIconColor={textColor}>
             <Picker.Item label="-- Pilih Film --" value="" />
             {MOVIES.map(m => (
               <Picker.Item key={m.id} label={m.title} value={m.id} />
@@ -87,7 +86,7 @@ export default function AddTicketScreen() {
           validate: (v) => (selectedMovie && selectedMovie.showtimes.includes(v)) || 'Jadwal tidak valid',
         }}
         render={({ field: { onChange, value } }) => (
-          <Picker selectedValue={value} onValueChange={onChange} enabled={!!selectedMovie} style={styles.picker}>
+          <Picker selectedValue={value} onValueChange={onChange} enabled={!!selectedMovie} style={[styles.picker, { color: textColor }]} dropdownIconColor={textColor}>
             <Picker.Item label={selectedMovie ? '-- Pilih Jadwal --' : 'Pilih film dulu'} value="" />
             {selectedMovie?.showtimes.map(t => (
               <Picker.Item key={t} label={t} value={t} />
@@ -118,7 +117,8 @@ export default function AddTicketScreen() {
             onChangeText={onChange}
             keyboardType="numeric"
             placeholder="1"
-            style={styles.input}
+            style={[styles.input, { borderColor, color: textColor }]}
+            placeholderTextColor={borderColor}
           />
         )}
       />
@@ -135,7 +135,8 @@ export default function AddTicketScreen() {
             value={value}
             onChangeText={onChange}
             placeholder="Nama lengkap"
-            style={styles.input}
+            style={[styles.input, { borderColor, color: textColor }]}
+            placeholderTextColor={borderColor}
           />
         )}
       />
@@ -164,7 +165,6 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,

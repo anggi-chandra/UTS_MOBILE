@@ -1,20 +1,24 @@
-import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  TextInput, 
-  TouchableOpacity, 
-  ScrollView, 
-  Alert,
-  useWindowDimensions,
-  Platform
-} from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
-import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { ThemedView } from '@/components/themed-view';
 import { Movie } from '@/data/movies';
-import Toast from 'react-native-toast-message';
+import { useColorSchemeController } from '@/hooks/use-color-scheme';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import * as ImagePicker from 'expo-image-picker';
+import React, { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import {
+  Alert,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View
+} from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Toast from 'react-native-toast-message';
 
 interface MovieFormData {
   title: string;
@@ -41,8 +45,11 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const tintColor = useThemeColor({}, 'tint');
+  const iconBg = useThemeColor({}, 'icon');
+  const { scheme } = useColorSchemeController();
+  const primaryBtnBg = scheme === 'dark' ? iconBg : tintColor;
 
-  const { control, handleSubmit, formState: { errors }, watch } = useForm<MovieFormData>({
+  const { control, handleSubmit, formState: { errors }, watch, setValue } = useForm<MovieFormData>({
     defaultValues: {
       title: movie?.title || '',
       genre: movie?.genre || '',
@@ -61,6 +68,15 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
 
   const onFormSubmit = (data: MovieFormData) => {
     try {
+      const posterUri = (imagePreview && imagePreview.trim().length > 0) ? imagePreview.trim() : data.poster.trim();
+      if (!posterUri) {
+        Toast.show({
+          type: 'error',
+          text1: 'Poster wajib diisi',
+          text2: 'Upload gambar atau masukkan URL poster',
+        });
+        return;
+      }
       const movieData: Omit<Movie, 'id'> = {
         title: data.title.trim(),
         genre: data.genre.trim(),
@@ -68,7 +84,7 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
         rating: data.rating.trim(),
         synopsis: data.synopsis.trim(),
         price: parseInt(data.price),
-        poster: data.poster.trim() || (movie ? movie.poster : ''),
+        poster: posterUri || (movie ? movie.poster : ''),
         showtimes: data.showtimes.split(',').map(time => time.trim()).filter(time => time.length > 0),
       };
 
@@ -92,8 +108,37 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
     setImagePreview(posterUrl);
   }, [posterUrl]);
 
+  const pickImage = async () => {
+    try {
+      if (Platform.OS !== 'web') {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert('Izin ditolak', 'Berikan izin akses galeri untuk upload poster.');
+          return;
+        }
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const uri = result.assets[0].uri;
+        setImagePreview(uri);
+        // Sinkronkan ke field form agar ikut tersimpan
+        setValue('poster', uri, { shouldValidate: true });
+      }
+    } catch (err) {
+      Toast.show({ type: 'error', text1: 'Gagal memilih gambar' });
+    }
+  };
+
+  const isWeb = Platform.OS === 'web';
+
   return (
-    <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.container}>
+    <View style={styles.container}>
       <ScrollView 
         style={[styles.scrollView, { backgroundColor }]}
         contentContainerStyle={[
@@ -108,14 +153,14 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
 
         {/* Image Preview */}
         {imagePreview ? (
-          <Animated.View entering={FadeIn} style={styles.imagePreview}>
+          <View style={styles.imagePreview}>
             <ThemedText style={styles.label}>Preview Poster:</ThemedText>
-            <Animated.Image 
+            <Image 
               source={{ uri: imagePreview }} 
               style={styles.previewImage}
               onError={() => setImagePreview('')}
             />
-          </Animated.View>
+          </View>
         ) : null}
 
         {/* Title */}
@@ -247,17 +292,26 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
           )}
         </ThemedView>
 
-        {/* Poster URL */}
+        {/* Poster: Upload atau URL */}
         <ThemedView style={styles.inputGroup}>
-          <ThemedText style={styles.label}>URL Poster *</ThemedText>
+          <ThemedText style={styles.label}>Poster *</ThemedText>
+          <TouchableOpacity
+            onPress={pickImage}
+            style={[styles.uploadButton, { borderColor, backgroundColor: primaryBtnBg }]}
+          >
+            <ThemedText style={[styles.buttonText, { color: '#fff' }]}>Upload Poster</ThemedText>
+          </TouchableOpacity>
+          <ThemedText style={styles.helperText}>Atau masukkan URL gambar</ThemedText>
           <Controller
             control={control}
             name="poster"
-            rules={{ 
-              required: 'URL poster wajib diisi',
-              pattern: {
-                value: /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i,
-                message: 'URL harus valid dan berformat gambar (jpg, png, gif, webp)'
+            rules={{
+              validate: (value) => {
+                if (imagePreview && imagePreview.length > 0) return true;
+                if (!value || value.trim().length === 0) return 'Poster wajib diisi';
+                const v = value.trim();
+                const ok = /^(https?:\/\/|blob:|file:).+/i.test(v);
+                return ok || 'Masukkan URL gambar valid atau upload gambar';
               }
             }}
             render={({ field: { onChange, onBlur, value } }) => (
@@ -350,7 +404,7 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.submitButton, { backgroundColor: tintColor }]}
+            style={[styles.button, styles.submitButton, { backgroundColor: primaryBtnBg }]}
             onPress={handleSubmit(onFormSubmit)}
           >
             <ThemedText style={[styles.buttonText, { color: '#fff' }]}>
@@ -359,9 +413,10 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
           </TouchableOpacity>
         </ThemedView>
       </ScrollView>
-    </Animated.View>
+    </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -429,6 +484,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginTop: 20,
+  },
+  uploadButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 0,
+    marginBottom: 10,
   },
   button: {
     flex: 1,

@@ -1,14 +1,13 @@
-import React, { useState, useCallback } from 'react';
-import { StyleSheet, useWindowDimensions, View, TouchableOpacity, RefreshControl } from 'react-native';
+import { MovieCard } from '@/components/MovieCard';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MovieCard } from '@/components/MovieCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useColorSchemeController } from '@/hooks/use-color-scheme';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useColorSchemeController } from '@/hooks/use-color-scheme';
+import React, { useCallback, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -21,6 +20,7 @@ export default function HomeScreen() {
   const { scheme, toggleScheme } = useColorSchemeController();
   
   const tintColor = useThemeColor({}, 'tint');
+  const iconBg = useThemeColor({}, 'icon');
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -44,7 +44,7 @@ export default function HomeScreen() {
       <ThemedText type="title" style={styles.header}>Daftar Film</ThemedText>
       <ThemedView style={styles.headerActions}>
         <TouchableOpacity
-          style={[styles.actionHeaderButton, { backgroundColor: tintColor }]}
+          style={[styles.actionHeaderButton, { backgroundColor: scheme === 'dark' ? '#444' : tintColor }]}
           onPress={toggleScheme}
         >
           <IconSymbol 
@@ -54,7 +54,7 @@ export default function HomeScreen() {
           />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.actionHeaderButton, { backgroundColor: showActions ? '#ff4444' : tintColor }]}
+          style={[styles.actionHeaderButton, { backgroundColor: showActions ? '#ff4444' : (scheme === 'dark' ? '#444' : tintColor) }]}
           onPress={handleToggleActions}
         >
           <IconSymbol 
@@ -64,7 +64,7 @@ export default function HomeScreen() {
           />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.actionHeaderButton, { backgroundColor: tintColor }]}
+          style={[styles.actionHeaderButton, { backgroundColor: scheme === 'dark' ? '#444' : tintColor }]}
           onPress={handleAddMovie}
         >
           <IconSymbol name="plus" size={20} color="#fff" />

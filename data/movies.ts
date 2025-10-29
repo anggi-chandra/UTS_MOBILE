@@ -13,15 +13,15 @@ export type Movie = {
 export const MOVIES: Movie[] = [
   {
     id: 'mv-001',
-    title: 'The React Awakens',
-    genre: 'Sci-Fi',
-    durationMin: 124,
+    title: 'Cars',
+    genre: 'Animasi',
+    durationMin: 116,
     rating: 'PG-13',
-    poster: require('@/assets/images/react-logo.png'),
+    poster: require('@/assets/images/disney-lightning-mcqueen-mcqueen-cars-movie-wallpaper-preview.jpg'),
     synopsis:
-      'Seorang developer menemukan kekuatan baru untuk membangun UI dengan komponen yang hidup dan interaktif.',
+      'Cars adalah tentang Lightning McQueen, sebuah mobil balap pemula yang sombong, yang tersesat dan terdampar di kota kecil Radiator Springs saat menuju balapan besar, Piala Piston. Di sana, ia perlahan-lahan belajar tentang persahabatan, nilai-nilai hidup, dan menjadi orang yang lebih baik dari penduduk kota, terutama Doc Hudson dan Mater. Perjalanan ini membuatnya menyadari bahwa kemenangan bukanlah segalanya dan persahabatan jauh lebih berharga. .',
     showtimes: ['12:00', '15:00', '18:30', '21:00'],
-    price: 45000,
+    price: 40000,
   },
   {
     id: 'mv-002',

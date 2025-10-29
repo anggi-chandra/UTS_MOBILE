@@ -19,7 +19,11 @@ export default function MovieDetailScreen() {
   return (
     <ScrollView contentContainerStyle={styles.scrollContent}>
       <ThemedView style={styles.container}>
-        <Image source={movie.poster} style={styles.poster} contentFit="cover" />
+        <Image
+          source={typeof movie.poster === 'string' ? { uri: movie.poster } : movie.poster}
+          style={styles.poster}
+          contentFit="cover"
+        />
         <ThemedText type="title" style={styles.title}>{movie.title}</ThemedText>
         <ThemedText style={styles.meta}>{movie.genre} • {movie.durationMin}m • {movie.rating}</ThemedText>
         <ThemedText>{movie.synopsis}</ThemedText>

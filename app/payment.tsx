@@ -17,6 +17,24 @@ export default function PaymentScreen() {
   const { addBooking } = useBookingStorage();
   const [method, setMethod] = useState<Method>('qris');
 
+  // Hitung warna teks yang kontras terhadap background tint (dark mode tint = #fff)
+  const getContrastTextColor = (bg: string, fallback: string) => {
+    try {
+      if (!bg.startsWith('#')) return fallback;
+      let hex = bg.slice(1);
+      if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+      const r = parseInt(hex.substring(0, 2), 16) / 255;
+      const g = parseInt(hex.substring(2, 4), 16) / 255;
+      const b = parseInt(hex.substring(4, 6), 16) / 255;
+      const srgb = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+      const L = 0.2126 * srgb(r) + 0.7152 * srgb(g) + 0.0722 * srgb(b);
+      return L > 0.6 ? '#000' : '#fff';
+    } catch {
+      return fallback;
+    }
+  };
+  const contrastOnTint = getContrastTextColor(tint, '#fff');
+
   const movie = useMemo(() => MOVIES.find(m => m.id === params.movieId), [params.movieId]);
   const qty = Number(params.tickets ?? '0');
   const seats = (params.seats ?? '').split(',').filter(Boolean);
@@ -62,7 +80,7 @@ export default function PaymentScreen() {
                 onPress={() => setMethod(m)}
                 style={[styles.methodBtn, { backgroundColor: method === m ? tint : 'transparent', borderColor: tint }]}
               >
-                <ThemedText style={{ color: method === m ? '#fff' : undefined }}>
+                <ThemedText style={{ color: method === m ? contrastOnTint : undefined }}>
                   {m === 'qris' ? 'QRIS' : m === 'cash' ? 'Cash' : 'Card'}
                 </ThemedText>
               </TouchableOpacity>
@@ -70,7 +88,7 @@ export default function PaymentScreen() {
           </View>
 
           <TouchableOpacity onPress={handlePay} style={[styles.payBtn, { backgroundColor: tint }]}> 
-            <ThemedText style={styles.payText}>Bayar</ThemedText>
+            <ThemedText style={[styles.payText, { color: contrastOnTint }]}>Bayar</ThemedText>
           </TouchableOpacity>
         </>
       ) : (

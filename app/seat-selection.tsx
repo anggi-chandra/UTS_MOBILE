@@ -10,6 +10,22 @@ export default function SeatSelectionScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ movieId?: string; showtime?: string; tickets?: string; customerName?: string }>();
   const tint = useThemeColor({}, 'tint');
+  // Hitung warna teks yang kontras terhadap background (tint)
+  const getContrastTextColor = (bg: string, fallback: string) => {
+    try {
+      if (!bg.startsWith('#')) return fallback;
+      let hex = bg.slice(1);
+      if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+      const r = parseInt(hex.substring(0, 2), 16) / 255;
+      const g = parseInt(hex.substring(2, 4), 16) / 255;
+      const b = parseInt(hex.substring(4, 6), 16) / 255;
+      const srgb = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+      const L = 0.2126 * srgb(r) + 0.7152 * srgb(g) + 0.0722 * srgb(b);
+      return L > 0.6 ? '#000' : '#fff';
+    } catch {
+      return fallback;
+    }
+  };
 
   const movie = useMemo(() => MOVIES.find(m => m.id === params.movieId), [params.movieId]);
   const qty = Number(params.tickets ?? '0');
@@ -63,7 +79,13 @@ export default function SeatSelectionScreen() {
                   style={[styles.seat, { borderColor: selected ? tint : '#ccc', backgroundColor: selected ? tint : 'transparent' }]}
                   onPress={() => toggleSeat(seat)}
                 >
-                  <ThemedText style={[styles.seatLabel, { color: selected ? '#fff' : undefined }]}>{seat}</ThemedText>
+                  <ThemedText style={[
+                    styles.seatLabel,
+                    { color: selected ? getContrastTextColor(tint, '#fff') : undefined },
+                  ]}
+                  >
+                    {seat}
+                  </ThemedText>
                 </TouchableOpacity>
               );
             })}
@@ -73,7 +95,13 @@ export default function SeatSelectionScreen() {
             onPress={handleProceed}
             style={[styles.proceedBtn, { backgroundColor: canProceed ? tint : '#aaa' }]}
           >
-            <ThemedText style={styles.proceedText}>Lanjut Pembayaran</ThemedText>
+            <ThemedText style={[
+              styles.proceedText,
+              { color: getContrastTextColor(canProceed ? tint : '#aaa', '#fff') },
+            ]}
+            >
+              Lanjut Pembayaran
+            </ThemedText>
           </TouchableOpacity>
         </>
       ) : (

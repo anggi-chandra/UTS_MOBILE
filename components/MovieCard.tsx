@@ -90,6 +90,25 @@ export function MovieCard({ movie, index, onEdit, onDelete, showActions = false 
     layout: Layout
   };
 
+  // Hitung warna teks yang kontras untuk badge pada dark/light mode
+  const getContrastTextColor = (bg: string, fallback: string) => {
+    try {
+      if (!bg || typeof bg !== 'string' || !bg.startsWith('#')) return fallback;
+      let hex = bg.slice(1);
+      if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+      const r = parseInt(hex.substring(0, 2), 16) / 255;
+      const g = parseInt(hex.substring(2, 4), 16) / 255;
+      const b = parseInt(hex.substring(4, 6), 16) / 255;
+      const srgb = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+      const L = 0.2126 * srgb(r) + 0.7152 * srgb(g) + 0.0722 * srgb(b);
+      return L > 0.6 ? '#000' : '#fff';
+    } catch {
+      return fallback;
+    }
+  };
+  const priceBadgeTextColor = getContrastTextColor(String(tintColor), scheme === 'dark' ? '#000' : '#fff');
+  const ratingBadgeTextColor = getContrastTextColor(String(iconBg), scheme === 'dark' ? '#000' : '#fff');
+
   return (
     <CardComponent
       {...animationProps}
@@ -103,10 +122,19 @@ export function MovieCard({ movie, index, onEdit, onDelete, showActions = false 
       ]}
     >
       <TouchableOpacity onPress={handlePress} style={styles.touchable}>
-        <Image 
-          source={typeof movie.poster === 'string' ? { uri: movie.poster } : movie.poster} 
-          style={styles.poster} 
-        />
+        <View style={styles.posterWrapper}>
+          <Image 
+            source={typeof movie.poster === 'string' ? { uri: movie.poster } : movie.poster} 
+            style={styles.poster} 
+          />
+          <View style={[styles.priceBadge, { backgroundColor: tintColor }]}> 
+            <ThemedText style={[styles.badgeText, { color: priceBadgeTextColor }]}>Rp {movie.price.toLocaleString('id-ID')}</ThemedText>
+          </View>
+          <View style={[styles.ratingBadge, { backgroundColor: iconBg }]}> 
+            <IconSymbol name="star.fill" size={12} color={scheme === 'dark' ? '#ffd54f' : '#ffb300'} />
+            <ThemedText style={[styles.ratingBadgeText, { color: ratingBadgeTextColor }]}>{movie.rating}</ThemedText>
+          </View>
+        </View>
         <ThemedView style={styles.content}>
           <ThemedText type="subtitle" style={styles.title} numberOfLines={2}>
             {movie.title}
@@ -116,8 +144,8 @@ export function MovieCard({ movie, index, onEdit, onDelete, showActions = false 
             <ThemedText style={styles.duration}>{movie.durationMin} min</ThemedText>
             <ThemedText style={[styles.rating, { color: tintColor }]}>Rating: {movie.rating}</ThemedText>
           </ThemedView>
-          <ThemedText style={[styles.price, { color: tintColor }]}>
-            Rp {movie.price.toLocaleString('id-ID')}
+          <ThemedText style={[styles.priceNote]}>
+            Klik kartu untuk lihat detail
           </ThemedText>
         </ThemedView>
       </TouchableOpacity>
@@ -180,6 +208,14 @@ const styles = StyleSheet.create({
   touchable: {
     flexDirection: 'row',
   },
+  posterWrapper: {
+    position: 'relative',
+    width: 120,
+    height: 180,
+    overflow: 'hidden',
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+  },
   poster: {
     width: 120,
     height: 180,
@@ -213,9 +249,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  price: {
-    fontSize: 16,
-    fontWeight: '700',
+  priceNote: {
+    fontSize: 12,
+    opacity: 0.6,
   },
   actionButtons: {
     position: 'absolute',
@@ -238,5 +274,38 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.2,
     shadowRadius: 1.41,
+  },
+  priceBadge: {
+    position: 'absolute',
+    left: 8,
+    bottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 0,
+    backgroundColor: '#333',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  ratingBadge: {
+    position: 'absolute',
+    right: 8,
+    top: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

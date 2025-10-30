@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useBookingStorage } from '@/hooks/use-booking-storage';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import Toast from 'react-native-toast-message';
 
 type Method = 'qris' | 'cash' | 'card';
@@ -68,11 +69,22 @@ export default function PaymentScreen() {
       <ThemedText type="title" style={styles.header}>Pembayaran</ThemedText>
       {movie ? (
         <>
-          <ThemedText>{movie.title}</ThemedText>
-          <ThemedText>Jadwal: {params.showtime}</ThemedText>
-          <ThemedText>Kursi: {seats.join(', ')}</ThemedText>
-          <ThemedText>Jumlah: {qty} tiket</ThemedText>
-          <ThemedText style={[styles.total, { color: tint }]}>Total: Rp {total.toLocaleString('id-ID')}</ThemedText>
+          <ThemedView style={styles.summaryCard}>
+            <ThemedText type="subtitle" style={styles.movieTitle}>{movie.title}</ThemedText>
+            <View style={styles.summaryRow}>
+              <IconSymbol name="film" size={16} color={tint} />
+              <ThemedText style={styles.summaryText}>Jadwal: {params.showtime}</ThemedText>
+            </View>
+            <View style={styles.summaryRow}>
+              <IconSymbol name="pencil" size={16} color={tint} />
+              <ThemedText style={styles.summaryText}>Kursi: {seats.join(', ')}</ThemedText>
+            </View>
+            <View style={styles.summaryRow}>
+              <IconSymbol name="plus" size={16} color={tint} />
+              <ThemedText style={styles.summaryText}>Jumlah: {qty} tiket</ThemedText>
+            </View>
+            <ThemedText style={[styles.total, { color: tint }]}>Total: Rp {total.toLocaleString('id-ID')}</ThemedText>
+          </ThemedView>
 
           <View style={styles.methods}>
             {(['qris','cash','card'] as Method[]).map(m => (
@@ -81,15 +93,20 @@ export default function PaymentScreen() {
                 onPress={() => setMethod(m)}
                 style={[styles.methodBtn, { backgroundColor: method === m ? tint : 'transparent', borderColor: tint }]}
               >
-                <ThemedText style={{ color: method === m ? contrastOnTint : undefined }}>
-                  {m === 'qris' ? 'QRIS' : m === 'cash' ? 'Cash' : 'Card'}
-                </ThemedText>
+                <View style={styles.methodInner}>
+                  {m === 'qris' && <IconSymbol name="qrcode" size={18} color={method === m ? contrastOnTint : tint} />}
+                  {m === 'cash' && <IconSymbol name="banknote" size={18} color={method === m ? contrastOnTint : tint} />}
+                  {m === 'card' && <IconSymbol name="creditcard" size={18} color={method === m ? contrastOnTint : tint} />}
+                  <ThemedText style={[styles.methodText, { color: method === m ? contrastOnTint : undefined }]}> 
+                    {m === 'qris' ? 'QRIS' : m === 'cash' ? 'Cash' : 'Card'}
+                  </ThemedText>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
 
           <TouchableOpacity onPress={handlePay} style={[styles.payBtn, { backgroundColor: tint }]}> 
-            <ThemedText style={[styles.payText, { color: contrastOnTint }]}>Bayar</ThemedText>
+            <ThemedText style={[styles.payText, { color: contrastOnTint }]}>Bayar Sekarang</ThemedText>
           </TouchableOpacity>
         </>
       ) : (
@@ -102,9 +119,20 @@ export default function PaymentScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 12 },
   header: { marginBottom: 8 },
-  total: { marginVertical: 8 },
+  summaryCard: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  movieTitle: { fontWeight: '700', marginBottom: 6 },
+  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 2 },
+  summaryText: {},
+  total: { marginTop: 8, fontWeight: '700' },
   methods: { flexDirection: 'row', gap: 8, marginVertical: 12 },
-  methodBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
+  methodBtn: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
+  methodInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  methodText: { fontWeight: '600' },
   payBtn: { alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
-  payText: { color: '#fff', fontWeight: '600' },
+  payText: { color: '#fff', fontWeight: '700' },
 });

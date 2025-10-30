@@ -29,6 +29,12 @@ const MAPPING = {
   'xmark': 'close',
   'pencil': 'edit',
   'trash': 'delete',
+  // Additional mappings for richer UI
+  'checkmark.circle.fill': 'check-circle',
+  'star.fill': 'star',
+  'qrcode': 'qr-code',
+  'creditcard': 'credit-card',
+  'banknote': 'attach-money',
 } as IconMapping;
 
 /**

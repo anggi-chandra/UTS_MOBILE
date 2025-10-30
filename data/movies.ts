@@ -10,6 +10,9 @@ export type Movie = {
   price: number; // per ticket
 };
 
+// Versi data default untuk sinkronisasi storage web
+export const MOVIES_VERSION = 'v2';
+
 export const MOVIES: Movie[] = [
   {
     id: 'mv-001',

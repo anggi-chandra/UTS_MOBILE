@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Platform } from 'react-native';
-import { Movie } from '@/data/movies';
+import { Movie, MOVIES_VERSION } from '@/data/movies';
 
 const STORAGE_KEY = 'cinema_movies';
+const VERSION_KEY = 'cinema_movies_version';
 const MEMORY_KEY = '__MOVIES_STORAGE_MEM__';
 
 // Fungsi untuk memastikan data movies selalu tersedia
@@ -22,7 +23,14 @@ export function useMovieStorage() {
         const ls = typeof window !== 'undefined' ? window.localStorage : undefined;
         if (ls) {
           const stored = ls.getItem(STORAGE_KEY);
-          if (stored) {
+          const storedVersion = ls.getItem(VERSION_KEY);
+          // Jika versi berbeda atau data belum ada, gunakan data default dari file
+          if (!stored || storedVersion !== String(MOVIES_VERSION)) {
+            const defaultMovies = getInitialMovies();
+            setMovies(defaultMovies);
+            ls.setItem(STORAGE_KEY, JSON.stringify(defaultMovies));
+            ls.setItem(VERSION_KEY, String(MOVIES_VERSION));
+          } else if (stored) {
             try {
               const parsedMovies = JSON.parse(stored);
               if (Array.isArray(parsedMovies) && parsedMovies.length > 0) {
@@ -32,18 +40,15 @@ export function useMovieStorage() {
                 const defaultMovies = getInitialMovies();
                 setMovies(defaultMovies);
                 ls.setItem(STORAGE_KEY, JSON.stringify(defaultMovies));
+                ls.setItem(VERSION_KEY, String(MOVIES_VERSION));
               }
             } catch (e) {
               console.error('Error parsing stored movies:', e);
               const defaultMovies = getInitialMovies();
               setMovies(defaultMovies);
               ls.setItem(STORAGE_KEY, JSON.stringify(defaultMovies));
+              ls.setItem(VERSION_KEY, String(MOVIES_VERSION));
             }
-          } else {
-            // Jika tidak ada data tersimpan, gunakan data default
-            const defaultMovies = getInitialMovies();
-            setMovies(defaultMovies);
-            ls.setItem(STORAGE_KEY, JSON.stringify(defaultMovies));
           }
         }
       } else {
@@ -74,6 +79,7 @@ export function useMovieStorage() {
         const ls = typeof window !== 'undefined' ? window.localStorage : undefined;
         if (ls) {
           ls.setItem(STORAGE_KEY, JSON.stringify(newMovies));
+          ls.setItem(VERSION_KEY, String(MOVIES_VERSION));
           console.log('Movies saved to localStorage:', newMovies.length);
         } else {
           console.warn('localStorage not available');

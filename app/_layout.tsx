@@ -5,6 +5,7 @@ import Toast from 'react-native-toast-message';
 import 'react-native-reanimated';
 
 import { ColorSchemeProvider, useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -23,7 +24,18 @@ function RootLayoutInner() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen 
+          name="(tabs)" 
+          options={{ 
+            headerShown: true,
+            title: 'CINEBOOK',
+            headerTitleAlign: 'center',
+            headerStyle: { backgroundColor: Colors[colorScheme ?? 'light'].background },
+            headerShadowVisible: false,
+            headerTintColor: Colors[colorScheme ?? 'light'].text,
+            headerTitleStyle: { fontWeight: '800' },
+          }} 
+        />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="movie/[id]" options={{ title: 'Detail Film' }} />
         <Stack.Screen name="manage-movie" options={{ title: 'Kelola Film' }} />

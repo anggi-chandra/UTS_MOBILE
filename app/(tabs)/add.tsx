@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MOVIES } from '@/data/movies';
+import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { StyleSheet, TextInput, View, useColorScheme, Platform } from 'react-native';
@@ -22,6 +22,7 @@ export default function AddTicketScreen() {
   const params = useLocalSearchParams<{ movieId?: string }>();
   const router = useRouter();
   const { addBooking } = useBookingStorage();
+  const { movies } = useMovieStorage();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const borderColor = useThemeColor({}, 'icon');
@@ -33,7 +34,7 @@ export default function AddTicketScreen() {
     mode: 'onBlur',
   });
 
-  const selectedMovie = MOVIES.find(m => m.id === watch('movieId'));
+  const selectedMovie = movies.find(m => m.id === watch('movieId'));
 
   useEffect(() => {
     if (params.movieId) {
@@ -72,7 +73,7 @@ export default function AddTicketScreen() {
         render={({ field: { onChange, value } }) => (
           Platform.OS === 'web' ? (
             <ThemedDropdown
-              items={[{ label: '-- Pilih Film --', value: '' }, ...MOVIES.map(m => ({ label: m.title, value: m.id }))] as DropdownItem[]}
+              items={[{ label: '-- Pilih Film --', value: '' }, ...movies.map(m => ({ label: m.title, value: m.id }))] as DropdownItem[]}
               selectedValue={value}
               onValueChange={onChange}
             />
@@ -86,7 +87,7 @@ export default function AddTicketScreen() {
                 mode="dropdown"
               >
                 <Picker.Item label="-- Pilih Film --" value="" />
-                {MOVIES.map(m => (
+                {movies.map(m => (
                   <Picker.Item key={m.id} label={m.title} value={m.id} />
                 ))}
               </Picker>

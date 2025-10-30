@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, ScrollView } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
-import { MOVIES } from '@/data/movies';
+import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 export default function SeatSelectionScreen() {
@@ -27,7 +27,8 @@ export default function SeatSelectionScreen() {
     }
   };
 
-  const movie = useMemo(() => MOVIES.find(m => m.id === params.movieId), [params.movieId]);
+  const { getMovieById } = useMovieStorage();
+  const movie = useMemo(() => (params.movieId ? getMovieById(String(params.movieId)) : undefined), [params.movieId, getMovieById]);
   const qty = Number(params.tickets ?? '0');
 
   const seatsAll = useMemo(() => {
@@ -64,55 +65,58 @@ export default function SeatSelectionScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.header}>Pilih Kursi</ThemedText>
-      {movie ? (
-        <>
-          <ThemedText>{movie.title}</ThemedText>
-          <ThemedText>Jadwal: {params.showtime}</ThemedText>
-          <ThemedText>Jumlah tiket: {qty}</ThemedText>
-          <View style={styles.grid}>
-            {seatsAll.map(seat => {
-              const selected = selectedSeats.includes(seat);
-              return (
-                <TouchableOpacity
-                  key={seat}
-                  style={[styles.seat, { borderColor: selected ? tint : '#ccc', backgroundColor: selected ? tint : 'transparent' }]}
-                  onPress={() => toggleSeat(seat)}
-                >
-                  <ThemedText style={[
-                    styles.seatLabel,
-                    { color: selected ? getContrastTextColor(tint, '#fff') : undefined },
-                  ]}
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ThemedText type="title" style={styles.header}>Pilih Kursi</ThemedText>
+        {movie ? (
+          <>
+            <ThemedText>{movie.title}</ThemedText>
+            <ThemedText>Jadwal: {params.showtime}</ThemedText>
+            <ThemedText>Jumlah tiket: {qty}</ThemedText>
+            <View style={styles.grid}>
+              {seatsAll.map(seat => {
+                const selected = selectedSeats.includes(seat);
+                return (
+                  <TouchableOpacity
+                    key={seat}
+                    style={[styles.seat, { borderColor: selected ? tint : '#ccc', backgroundColor: selected ? tint : 'transparent' }]}
+                    onPress={() => toggleSeat(seat)}
                   >
-                    {seat}
-                  </ThemedText>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <TouchableOpacity
-            disabled={!canProceed}
-            onPress={handleProceed}
-            style={[styles.proceedBtn, { backgroundColor: canProceed ? tint : '#aaa' }]}
-          >
-            <ThemedText style={[
-              styles.proceedText,
-              { color: getContrastTextColor(canProceed ? tint : '#aaa', '#fff') },
-            ]}
+                    <ThemedText style={[
+                      styles.seatLabel,
+                      { color: selected ? getContrastTextColor(tint, '#fff') : undefined },
+                    ]}
+                    >
+                      {seat}
+                    </ThemedText>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TouchableOpacity
+              disabled={!canProceed}
+              onPress={handleProceed}
+              style={[styles.proceedBtn, { backgroundColor: canProceed ? tint : '#aaa' }]}
             >
-              Lanjut Pembayaran
-            </ThemedText>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <ThemedText>Data film tidak ditemukan</ThemedText>
-      )}
+              <ThemedText style={[
+                styles.proceedText,
+                { color: getContrastTextColor(canProceed ? tint : '#aaa', '#fff') },
+              ]}
+              >
+                Lanjut Pembayaran
+              </ThemedText>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <ThemedText>Data film tidak ditemukan</ThemedText>
+        )}
+      </ScrollView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 12 },
+  scrollContent: { paddingBottom: 24 },
   header: { marginBottom: 8 },
   grid: {
     flexDirection: 'row',

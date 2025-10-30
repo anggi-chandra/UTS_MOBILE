@@ -1,6 +1,6 @@
 import { useLocalSearchParams, router } from 'expo-router';
 import { StyleSheet, ScrollView } from 'react-native';
-import { MOVIES } from '@/data/movies';
+import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { Image } from 'expo-image';
@@ -8,7 +8,14 @@ import { Colors } from '@/constants/theme';
 
 export default function MovieDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const movie = MOVIES.find((m) => m.id === id);
+  const { getMovieById, loading } = useMovieStorage();
+  const movie = id ? getMovieById(String(id)) : undefined;
+
+  if (loading) {
+    return (
+      <ThemedView style={styles.center}><ThemedText>Memuat detail film...</ThemedText></ThemedView>
+    );
+  }
 
   if (!movie) {
     return (

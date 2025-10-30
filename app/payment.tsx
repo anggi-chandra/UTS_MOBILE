@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
-import { MOVIES } from '@/data/movies';
+import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useBookingStorage } from '@/hooks/use-booking-storage';
 import Toast from 'react-native-toast-message';
@@ -35,7 +35,8 @@ export default function PaymentScreen() {
   };
   const contrastOnTint = getContrastTextColor(tint, '#fff');
 
-  const movie = useMemo(() => MOVIES.find(m => m.id === params.movieId), [params.movieId]);
+  const { getMovieById } = useMovieStorage();
+  const movie = useMemo(() => (params.movieId ? getMovieById(String(params.movieId)) : undefined), [params.movieId, getMovieById]);
   const qty = Number(params.tickets ?? '0');
   const seats = (params.seats ?? '').split(',').filter(Boolean);
   const total = useMemo(() => (movie ? qty * movie.price : 0), [movie, qty]);

@@ -45,14 +45,24 @@ export function MovieCard({ movie, index, onEdit, onDelete, showActions = false 
   };
 
   const handleDelete = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const ok = window.confirm(`Apakah Anda yakin ingin menghapus film "${movie.title}"?`);
+      if (ok && onDelete) {
+        onDelete(movie.id);
+        Toast.show({
+          type: 'success',
+          text1: 'Film berhasil dihapus',
+          text2: `${movie.title} telah dihapus dari daftar`,
+        });
+      }
+      return;
+    }
+
     Alert.alert(
       'Hapus Film',
       `Apakah Anda yakin ingin menghapus film "${movie.title}"?`,
       [
-        {
-          text: 'Batal',
-          style: 'cancel',
-        },
+        { text: 'Batal', style: 'cancel' },
         {
           text: 'Hapus',
           style: 'destructive',

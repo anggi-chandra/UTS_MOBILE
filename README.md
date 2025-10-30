@@ -94,6 +94,10 @@ CINEBOOK adalah aplikasi berbasis Expo/React Native untuk melihat daftar film, m
 
 Proyek ini dibuat untuk kebutuhan pembelajaran/pengembangan aplikasi. Silakan sesuaikan sesuai kebutuhan Anda.
 
+LINK LOOM
+https://www.loom.com/share/f1549d9c2b77436bbaaf60b860dcf327
+
+
 Untuk bukti screenshot dari aplikasi nya :
 ![Screenshot_2025-10-30-21-52-37-934_host exp exponent 1](https://github.com/user-attachments/assets/8ef92b74-dc57-4a68-9456-941dda3b20c1)
 ![Screenshot_2025-10-30-21-52-40-542_host exp exponent 1](https://github.com/user-attachments/assets/553d3340-01b1-42fb-a6af-26c22085ba36)
@@ -103,5 +107,4 @@ Untuk bukti screenshot dari aplikasi nya :
 ![Screenshot_2025-10-30-21-52-45-949_host exp exponent 1](https://github.com/user-attachments/assets/db0c32e3-654f-47ca-bb34-67c106ebd0d0)
 ![Screenshot_2025-10-30-21-53-42-452_host exp exponent 2](https://github.com/user-attachments/assets/c8ed27e3-84b0-4b32-8d30-78a40b1f7a36)
 
-LINK LOOM
-https://www.loom.com/share/f1549d9c2b77436bbaaf60b860dcf327
+

@@ -37,7 +37,7 @@ export function ColorSchemeProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const toggleScheme = useCallback(() => {
-    setScheme((prev: Scheme) => (prev === 'light' ? 'dark' : 'light'));
+    setSchemeState((prev: Scheme) => (prev === 'light' ? 'dark' : 'light'));
   }, [setScheme]);
 
   const value = useMemo<ColorSchemeContextValue>(() => ({ scheme, setScheme, toggleScheme }), [scheme, setScheme, toggleScheme]);

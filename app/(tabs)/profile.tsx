@@ -2,9 +2,11 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useAuthStorage } from '@/hooks/use-auth-storage';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -27,7 +29,15 @@ export default function ProfileScreen() {
         <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={styles.header}>
                 <View style={[styles.avatarContainer, { borderColor: theme.text }]}>
-                    <Text style={{ fontSize: 60 }}>😎</Text>
+                    {user?.avatar_url ? (
+                        <Image
+                            source={{ uri: user.avatar_url }}
+                            style={{ width: 96, height: 96, borderRadius: 48 }}
+                            contentFit="cover"
+                        />
+                    ) : (
+                        <Text style={{ fontSize: 60 }}>😎</Text>
+                    )}
                 </View>
                 <Text style={[styles.name, { color: theme.text }]}>{user?.name || 'Guest'}</Text>
                 <Text style={[styles.email, { color: theme.icon }]}>{user?.email || 'Please login'}</Text>
@@ -43,19 +53,28 @@ export default function ProfileScreen() {
                     <>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Account Settings</Text>
 
-                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.icon }]}>
+                        <TouchableOpacity
+                            style={[styles.menuItem, { borderBottomColor: theme.icon }]}
+                            onPress={() => router.push('/profile/edit')}
+                        >
                             <IconSymbol name="gear" size={24} color={theme.text} />
                             <Text style={[styles.menuText, { color: theme.text }]}>Edit Profile</Text>
                             <IconSymbol name="chevron.right" size={20} color={theme.icon} />
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.icon }]}>
+                        <TouchableOpacity
+                            style={[styles.menuItem, { borderBottomColor: theme.icon }]}
+                            onPress={() => Toast.show({ type: 'info', text1: 'Fitur akan segera hadir!' })}
+                        >
                             <IconSymbol name="bell.fill" size={24} color={theme.text} />
                             <Text style={[styles.menuText, { color: theme.text }]}>Notifications</Text>
                             <IconSymbol name="chevron.right" size={20} color={theme.icon} />
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.icon }]}>
+                        <TouchableOpacity
+                            style={[styles.menuItem, { borderBottomColor: theme.icon }]}
+                            onPress={() => Toast.show({ type: 'info', text1: 'Fitur akan segera hadir!' })}
+                        >
                             <IconSymbol name="lock.fill" size={24} color={theme.text} />
                             <Text style={[styles.menuText, { color: theme.text }]}>Privacy & Security</Text>
                             <IconSymbol name="chevron.right" size={20} color={theme.icon} />

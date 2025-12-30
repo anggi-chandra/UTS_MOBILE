@@ -1,15 +1,28 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors } from '@/constants/theme';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { ScrollView, Share, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function MovieDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getMovieById, loading } = useMovieStorage();
   const movie = id ? getMovieById(String(id)) : undefined;
+  const tint = useThemeColor({}, 'tint');
+
+  const handleShare = async () => {
+    if (!movie) return;
+    try {
+      await Share.share({
+        message: `Tonton film ${movie.title} di Cinebook! Klik link ini: cinebook://movie/${movie.id}`,
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -31,15 +44,22 @@ export default function MovieDetailScreen() {
           style={styles.poster}
           contentFit="cover"
         />
-        <ThemedText type="title" style={styles.title}>{movie.title}</ThemedText>
+
+        <View style={styles.titleRow}>
+          <ThemedText type="title" style={styles.title}>{movie.title}</ThemedText>
+          <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
+            <IconSymbol name="square.and.arrow.up" size={24} color={tint} />
+          </TouchableOpacity>
+        </View>
+
         <ThemedText style={styles.meta}>{movie.genre} • {movie.durationMin}m • {movie.rating}</ThemedText>
         <ThemedText>{movie.synopsis}</ThemedText>
-        <ThemedText style={styles.sectionTitle}>Jadwal Tayang</ThemedText>
+        <ThemedText style={[styles.sectionTitle, { color: tint }]}>Jadwal Tayang</ThemedText>
         <ThemedText>{movie.showtimes.join(' | ')}</ThemedText>
         <ThemedText style={styles.price}>Harga: Rp {movie.price.toLocaleString('id-ID')}</ThemedText>
 
         <TouchableOpacity
-          style={[styles.buyButton, { backgroundColor: Colors.light.tint }]}
+          style={[styles.buyButton, { backgroundColor: tint }]}
           onPress={() => router.push({ pathname: '/(tabs)/add', params: { movieId: movie.id } })}
         >
           <ThemedText style={styles.buyButtonText}>Beli Tiket</ThemedText>
@@ -68,21 +88,27 @@ const styles = StyleSheet.create({
     height: 260,
     borderRadius: 12,
   },
-  title: {
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 8,
+  },
+  title: {
+    flex: 1,
+    marginRight: 8,
+  },
+  shareButton: {
+    padding: 8,
   },
   meta: {
     opacity: 0.8,
   },
   sectionTitle: {
     fontWeight: '600',
-    color: Colors.light.tint,
   },
   price: {
     fontWeight: '600',
-  },
-  link: {
-    marginTop: 8,
   },
   buyButton: {
     marginTop: 16,

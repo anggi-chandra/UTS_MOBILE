@@ -1,14 +1,14 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity, useWindowDimensions, Alert, Platform, View } from 'react-native';
-import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
-import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { useColorSchemeController } from '@/hooks/use-color-scheme';
+import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Movie } from '@/data/movies';
+import { useColorSchemeController } from '@/hooks/use-color-scheme';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { Alert, Platform, StyleSheet, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 
 interface MovieCardProps {
@@ -23,7 +23,7 @@ export function MovieCard({ movie, index, onEdit, onDelete, showActions = false 
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isTablet = width > 768;
-  
+
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'icon');
   const tintColor = useThemeColor({}, 'tint');
@@ -123,15 +123,16 @@ export function MovieCard({ movie, index, onEdit, onDelete, showActions = false 
     >
       <TouchableOpacity onPress={handlePress} style={styles.touchable}>
         <View style={styles.posterWrapper}>
-          <Image 
-            source={typeof movie.poster === 'string' ? { uri: movie.poster } : movie.poster} 
-            style={styles.poster} 
+          <Image
+            source={typeof movie.poster === 'string' ? { uri: movie.poster } : movie.poster}
+            style={styles.poster}
+            contentFit="cover"
+            transition={1000}
           />
-          <View style={[styles.priceBadge, { backgroundColor: tintColor }]}> 
+          <View style={[styles.priceBadge, { backgroundColor: tintColor }]}>
             <ThemedText style={[styles.badgeText, { color: priceBadgeTextColor }]}>Rp {movie.price.toLocaleString('id-ID')}</ThemedText>
           </View>
-          <View style={[styles.ratingBadge, { backgroundColor: iconBg }]}> 
-            <IconSymbol name="star.fill" size={12} color={scheme === 'dark' ? '#ffd54f' : '#ffb300'} />
+          <View style={[styles.ratingBadge, { backgroundColor: iconBg }]}>
             <ThemedText style={[styles.ratingBadgeText, { color: ratingBadgeTextColor }]}>{movie.rating}</ThemedText>
           </View>
         </View>
@@ -139,17 +140,18 @@ export function MovieCard({ movie, index, onEdit, onDelete, showActions = false 
           <ThemedText type="subtitle" style={styles.title} numberOfLines={2}>
             {movie.title}
           </ThemedText>
+
           <ThemedText style={styles.genre}>{movie.genre}</ThemedText>
           <ThemedView style={styles.details}>
             <ThemedText style={styles.duration}>{movie.durationMin} min</ThemedText>
-            <ThemedText style={[styles.rating, { color: tintColor }]}>Rating: {movie.rating}</ThemedText>
+            <ThemedText style={[styles.rating, { color: tintColor }]}>Usia: {movie.rating}</ThemedText>
           </ThemedView>
           <ThemedText style={[styles.priceNote]}>
             Klik kartu untuk lihat detail
           </ThemedText>
         </ThemedView>
       </TouchableOpacity>
-      
+
       {showActions && (
         isWeb ? (
           <View style={styles.actionButtons}>
@@ -167,7 +169,7 @@ export function MovieCard({ movie, index, onEdit, onDelete, showActions = false 
             </TouchableOpacity>
           </View>
         ) : (
-          <Animated.View 
+          <Animated.View
             entering={FadeIn.delay(200)}
             style={styles.actionButtons}
           >
@@ -213,8 +215,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 180,
     overflow: 'hidden',
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
+    // borderTopLeftRadius and borderBottomLeftRadius removed to let parent handle it
   },
   poster: {
     width: 120,

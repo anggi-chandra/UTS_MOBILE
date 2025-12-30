@@ -3,6 +3,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Movie } from '@/data/movies';
 import { useColorSchemeController } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { decode } from 'base64-arraybuffer';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -17,7 +19,6 @@ import {
   useWindowDimensions,
   View
 } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 
 interface MovieFormData {
@@ -33,14 +34,14 @@ interface MovieFormData {
 
 interface MovieFormProps {
   movie?: Movie;
-  onSubmit: (data: Omit<Movie, 'id'>) => void;
+  onSubmit: (data: Omit<Movie, 'id'>) => Promise<void> | void;
   onCancel: () => void;
 }
 
 export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
   const { width } = useWindowDimensions();
   const isTablet = width > 768;
-  
+
   const borderColor = useThemeColor({}, 'icon');
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
@@ -49,7 +50,7 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
   const { scheme } = useColorSchemeController();
   const primaryBtnBg = scheme === 'dark' ? iconBg : tintColor;
 
-  const { control, handleSubmit, formState: { errors }, watch, setValue } = useForm<MovieFormData>({
+  const { control, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm<MovieFormData>({
     defaultValues: {
       title: movie?.title || '',
       genre: movie?.genre || '',
@@ -62,13 +63,31 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
     }
   });
 
+  React.useEffect(() => {
+    if (movie) {
+      reset({
+        title: movie.title,
+        genre: movie.genre,
+        durationMin: movie.durationMin.toString(),
+        rating: movie.rating,
+        synopsis: movie.synopsis,
+        price: movie.price.toString(),
+        poster: typeof movie.poster === 'string' ? (movie.poster as string) : '',
+        showtimes: movie.showtimes?.join(', ') || '',
+      });
+      setImagePreview(typeof movie.poster === 'string' ? (movie.poster as string) : '');
+    }
+  }, [movie, reset]);
+
   const [imagePreview, setImagePreview] = useState<string>(
     typeof movie?.poster === 'string' ? (movie?.poster as string) : ''
   );
+  const [imageMimeType, setImageMimeType] = useState<string>('image/jpeg');
 
-  const onFormSubmit = (data: MovieFormData) => {
+  const onFormSubmit = async (data: MovieFormData) => {
     try {
-      const posterUri = (imagePreview && imagePreview.trim().length > 0) ? imagePreview.trim() : data.poster.trim();
+      let posterUri = (imagePreview && imagePreview.trim().length > 0) ? imagePreview.trim() : data.poster.trim();
+
       if (!posterUri) {
         Toast.show({
           type: 'error',
@@ -77,6 +96,65 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
         });
         return;
       }
+
+      // Upload image if it's a local URI
+      if (!posterUri.startsWith('http')) {
+        try {
+          const { supabase } = require('@/lib/supabase');
+
+          // Determine extension from mimeType if available, otherwise fallback to uri
+          let ext = 'jpg';
+          if (imageMimeType) {
+            if (imageMimeType === 'image/png') ext = 'png';
+            else if (imageMimeType === 'image/webp') ext = 'webp';
+            else if (imageMimeType === 'image/jpeg') ext = 'jpg';
+          } else {
+            ext = posterUri.split('.').pop() || 'jpg';
+          }
+
+          const fileName = `${Date.now()}.${ext}`;
+
+          if (Platform.OS === 'web') {
+            const res = await fetch(posterUri);
+            const blob = await res.blob();
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('posters')
+              .upload(fileName, blob, {
+                contentType: imageMimeType || blob.type || 'image/jpeg'
+              });
+            if (uploadError) throw uploadError;
+          } else {
+            // Native: use FileSystem and base64
+            const base64 = await FileSystem.readAsStringAsync(posterUri, {
+              encoding: 'base64',
+            });
+            const arrayBuffer = decode(base64);
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('posters')
+              .upload(fileName, arrayBuffer, {
+                contentType: imageMimeType || 'image/jpeg',
+                upsert: false
+              });
+            if (uploadError) throw uploadError;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('posters')
+            .getPublicUrl(fileName);
+
+          posterUri = publicUrl;
+        } catch (uploadErr: any) {
+          console.error('Upload error:', uploadErr);
+          Toast.show({
+            type: 'error',
+            text1: 'Gagal upload gambar',
+            text2: uploadErr.message,
+          });
+          return;
+        }
+      }
+
       const movieData: Omit<Movie, 'id'> = {
         title: data.title.trim(),
         genre: data.genre.trim(),
@@ -88,7 +166,7 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
         showtimes: data.showtimes.split(',').map(time => time.trim()).filter(time => time.length > 0),
       };
 
-      onSubmit(movieData);
+      await onSubmit(movieData);
       Toast.show({
         type: 'success',
         text1: movie ? 'Film berhasil diupdate!' : 'Film berhasil ditambahkan!',
@@ -125,8 +203,12 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const uri = result.assets[0].uri;
+        const asset = result.assets[0];
+        const uri = asset.uri;
         setImagePreview(uri);
+        if (asset.mimeType) {
+          setImageMimeType(asset.mimeType);
+        }
         // Sinkronkan ke field form agar ikut tersimpan
         setValue('poster', uri, { shouldValidate: true });
       }
@@ -139,7 +221,7 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={[styles.scrollView, { backgroundColor }]}
         contentContainerStyle={[
           styles.formContainer,
@@ -155,8 +237,8 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
         {imagePreview ? (
           <View style={styles.imagePreview}>
             <ThemedText style={styles.label}>Preview Poster:</ThemedText>
-            <Image 
-              source={{ uri: imagePreview }} 
+            <Image
+              source={{ uri: imagePreview }}
               style={styles.previewImage}
               onError={() => setImagePreview('')}
             />
@@ -169,7 +251,7 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
           <Controller
             control={control}
             name="title"
-            rules={{ 
+            rules={{
               required: 'Judul film wajib diisi',
               minLength: { value: 2, message: 'Judul minimal 2 karakter' }
             }}
@@ -238,11 +320,11 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
 
         {/* Rating */}
         <ThemedView style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Rating (1-10) *</ThemedText>
+          <ThemedText style={styles.label}>Klasifikasi Usia *</ThemedText>
           <Controller
             control={control}
             name="rating"
-            rules={{ 
+            rules={{
               required: 'Rating wajib diisi',
             }}
             render={({ field: { onChange, onBlur, value } }) => (
@@ -267,7 +349,7 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
           <Controller
             control={control}
             name="price"
-            rules={{ 
+            rules={{
               required: 'Harga wajib diisi',
               pattern: {
                 value: /^[0-9]+$/,
@@ -340,7 +422,7 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
           <Controller
             control={control}
             name="showtimes"
-            rules={{ 
+            rules={{
               required: 'Jadwal tayang wajib diisi',
               validate: (value) => {
                 const times = value.split(',').map(t => t.trim()).filter(t => t.length > 0);
@@ -369,7 +451,7 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
           <Controller
             control={control}
             name="synopsis"
-            rules={{ 
+            rules={{
               required: 'Sinopsis wajib diisi',
               minLength: { value: 20, message: 'Sinopsis minimal 20 karakter' }
             }}

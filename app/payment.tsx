@@ -1,12 +1,12 @@
-import React, { useMemo, useState } from 'react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useBookingStorage } from '@/hooks/use-booking-storage';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useBookingStorage } from '@/hooks/use-booking-storage';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 type Method = 'qris' | 'cash' | 'card';
@@ -17,6 +17,7 @@ export default function PaymentScreen() {
   const params = useLocalSearchParams<{ movieId?: string; showtime?: string; tickets?: string; customerName?: string; seats?: string }>();
   const { addBooking } = useBookingStorage();
   const [method, setMethod] = useState<Method>('qris');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Hitung warna teks yang kontras terhadap background tint (dark mode tint = #fff)
   const getContrastTextColor = (bg: string, fallback: string) => {
@@ -42,26 +43,38 @@ export default function PaymentScreen() {
   const seats = (params.seats ?? '').split(',').filter(Boolean);
   const total = useMemo(() => (movie ? qty * movie.price : 0), [movie, qty]);
 
-  const handlePay = () => {
+  const handlePay = async () => {
     if (!movie || !params.showtime || seats.length !== qty) {
       Toast.show({ type: 'error', text1: 'Data belum lengkap' });
       return;
     }
-    const poster = typeof movie.poster === 'string' ? movie.poster : undefined;
-    addBooking({
-      movieId: movie.id,
-      title: movie.title,
-      showtime: String(params.showtime),
-      quantity: qty,
-      totalPrice: total,
-      poster,
-      customerName: String(params.customerName ?? ''),
-      seats,
-      paymentStatus: 'paid',
-      paymentMethod: method,
-    });
-    Toast.show({ type: 'success', text1: 'Pembayaran berhasil', text2: `${movie.title} • ${params.showtime} • Kursi: ${seats.join(', ')} • Total Rp ${total.toLocaleString('id-ID')}` });
-    router.push('/explore');
+
+    setIsProcessing(true);
+    try {
+      const poster = typeof movie.poster === 'string' ? movie.poster : undefined;
+      const result = await addBooking({
+        movieId: movie.id,
+        title: movie.title,
+        showtime: String(params.showtime),
+        quantity: qty,
+        totalPrice: total,
+        poster,
+        customerName: String(params.customerName ?? ''),
+        seats,
+        paymentStatus: 'paid',
+        paymentMethod: method,
+      });
+
+      if (result) {
+        Toast.show({ type: 'success', text1: 'Pembayaran berhasil', text2: `${movie.title} • ${params.showtime} • Kursi: ${seats.join(', ')} • Total Rp ${total.toLocaleString('id-ID')}` });
+        router.push('/explore');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      Toast.show({ type: 'error', text1: 'Terjadi kesalahan saat memproses pembayaran' });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -87,7 +100,7 @@ export default function PaymentScreen() {
           </ThemedView>
 
           <View style={styles.methods}>
-            {(['qris','cash','card'] as Method[]).map(m => (
+            {(['qris', 'cash', 'card'] as Method[]).map(m => (
               <TouchableOpacity
                 key={m}
                 onPress={() => setMethod(m)}
@@ -97,7 +110,7 @@ export default function PaymentScreen() {
                   {m === 'qris' && <IconSymbol name="qrcode" size={18} color={method === m ? contrastOnTint : tint} />}
                   {m === 'cash' && <IconSymbol name="banknote" size={18} color={method === m ? contrastOnTint : tint} />}
                   {m === 'card' && <IconSymbol name="creditcard" size={18} color={method === m ? contrastOnTint : tint} />}
-                  <ThemedText style={[styles.methodText, { color: method === m ? contrastOnTint : undefined }]}> 
+                  <ThemedText style={[styles.methodText, { color: method === m ? contrastOnTint : undefined }]}>
                     {m === 'qris' ? 'QRIS' : m === 'cash' ? 'Cash' : 'Card'}
                   </ThemedText>
                 </View>
@@ -105,8 +118,14 @@ export default function PaymentScreen() {
             ))}
           </View>
 
-          <TouchableOpacity onPress={handlePay} style={[styles.payBtn, { backgroundColor: tint }]}> 
-            <ThemedText style={[styles.payText, { color: contrastOnTint }]}>Bayar Sekarang</ThemedText>
+          <TouchableOpacity
+            onPress={handlePay}
+            disabled={isProcessing}
+            style={[styles.payBtn, { backgroundColor: isProcessing ? '#ccc' : tint }]}
+          >
+            <ThemedText style={[styles.payText, { color: isProcessing ? '#666' : contrastOnTint }]}>
+              {isProcessing ? 'Memproses...' : 'Bayar Sekarang'}
+            </ThemedText>
           </TouchableOpacity>
         </>
       ) : (

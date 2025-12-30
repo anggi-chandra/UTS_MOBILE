@@ -1,15 +1,15 @@
-import { useEffect } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMovieStorage } from '@/hooks/use-movie-storage';
-import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
-import { StyleSheet, TextInput, View, useColorScheme, Platform } from 'react-native';
+import { ThemedView } from '@/components/themed-view';
+import ThemedDropdown, { DropdownItem } from '@/components/ui/themed-dropdown';
+import { useBookingStorage } from '@/hooks/use-booking-storage';
+import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Picker } from '@react-native-picker/picker';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { Platform, StyleSheet, TextInput, View, useColorScheme } from 'react-native';
 import Toast from 'react-native-toast-message';
-import { useBookingStorage } from '@/hooks/use-booking-storage';
-import ThemedDropdown, { DropdownItem } from '@/components/ui/themed-dropdown';
 
 type FormValues = {
   movieId: string;
@@ -61,7 +61,7 @@ export default function AddTicketScreen() {
   };
 
   return (
-    <ThemedView style={[styles.container, { backgroundColor }] }>
+    <ThemedView style={[styles.container, { backgroundColor }]}>
       <ThemedText type="title" style={styles.header}>Tambah Tiket</ThemedText>
 
       {/* Pilih Film */}
@@ -78,11 +78,11 @@ export default function AddTicketScreen() {
               onValueChange={onChange}
             />
           ) : (
-            <View style={[styles.pickerContainer, { backgroundColor: pickerBgColor, borderColor }]}>
-              <Picker 
-                selectedValue={value} 
-                onValueChange={onChange} 
-                style={[styles.picker, { color: textColor }]} 
+            <View style={[styles.pickerContainer, { backgroundColor: backgroundColor, borderColor }]}>
+              <Picker
+                selectedValue={value}
+                onValueChange={onChange}
+                style={[styles.picker, { color: textColor }]}
                 dropdownIconColor={textColor}
                 mode="dropdown"
               >
@@ -110,18 +110,18 @@ export default function AddTicketScreen() {
           Platform.OS === 'web' ? (
             <ThemedDropdown
               items={[(selectedMovie ? { label: '-- Pilih Jadwal --', value: '' } : { label: 'Pilih film dulu', value: '' }),
-                ...((selectedMovie?.showtimes ?? []).map(t => ({ label: t, value: t })))]}
+              ...((selectedMovie?.showtimes ?? []).map(t => ({ label: t, value: t })))]}
               selectedValue={value}
               onValueChange={onChange}
               disabled={!selectedMovie}
             />
           ) : (
-            <View style={[styles.pickerContainer, { backgroundColor: pickerBgColor, borderColor }]}>
-              <Picker 
-                selectedValue={value} 
-                onValueChange={onChange} 
-                enabled={!!selectedMovie} 
-                style={[styles.picker, { color: textColor }]} 
+            <View style={[styles.pickerContainer, { backgroundColor: backgroundColor, borderColor }]}>
+              <Picker
+                selectedValue={value}
+                onValueChange={onChange}
+                enabled={!!selectedMovie}
+                style={[styles.picker, { color: textColor }]}
                 dropdownIconColor={textColor}
                 mode="dropdown"
               >

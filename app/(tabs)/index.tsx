@@ -2,31 +2,39 @@ import { MovieCard } from '@/components/MovieCard';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useAuthStorage } from '@/hooks/use-auth-storage';
 import { useColorSchemeController } from '@/hooks/use-color-scheme';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Animated, FlatList, Pressable, RefreshControl, StyleSheet, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { user } = useAuthStorage();
   const { width } = useWindowDimensions();
   const numCols = width > 900 ? 2 : 1;
-  
-  const { movies, deleteMovie } = useMovieStorage();
+
+  const { movies, deleteMovie, refreshMovies } = useMovieStorage();
   const [refreshing, setRefreshing] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [selectedGenre, setSelectedGenre] = useState<string>('Semua');
   const { scheme, toggleScheme } = useColorSchemeController();
-  
+
   const tintColor = useThemeColor({}, 'tint');
   const iconBg = useThemeColor({}, 'icon');
   const textColor = useThemeColor({}, 'text');
 
+  useFocusEffect(
+    useCallback(() => {
+      refreshMovies();
+    }, [])
+  );
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 500);
+    refreshMovies().finally(() => setRefreshing(false));
   }, []);
 
   const handleAddMovie = () => {
@@ -42,13 +50,20 @@ export default function HomeScreen() {
   };
 
   const genres = useMemo(() => {
-    const unique = Array.from(new Set(movies.map(m => m.genre)));
-    return ['Semua', ...unique];
+    const allGenres = movies.flatMap(m =>
+      m.genre ? m.genre.split(',').map(g => g.trim()) : []
+    );
+    const unique = Array.from(new Set(allGenres)).filter(g => g.length > 0);
+    return ['Semua', ...unique.sort()];
   }, [movies]);
 
   const filteredMovies = useMemo(() => {
     if (!selectedGenre || selectedGenre === 'Semua') return movies;
-    return movies.filter(m => m.genre === selectedGenre);
+    return movies.filter(m => {
+      if (!m.genre) return false;
+      const movieGenres = m.genre.split(',').map(g => g.trim());
+      return movieGenres.includes(selectedGenre);
+    });
   }, [movies, selectedGenre]);
 
   // Chip dengan animasi scale dan hover (web)
@@ -129,28 +144,32 @@ export default function HomeScreen() {
           style={[styles.actionHeaderButton, { backgroundColor: scheme === 'dark' ? '#444' : tintColor }]}
           onPress={toggleScheme}
         >
-          <IconSymbol 
+          <IconSymbol
             name={scheme === 'light' ? 'moon.fill' : 'sun.max.fill'}
             size={20}
             color="#fff"
           />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionHeaderButton, { backgroundColor: showActions ? '#ff4444' : (scheme === 'dark' ? '#444' : tintColor) }]}
-          onPress={handleToggleActions}
-        >
-          <IconSymbol 
-            name={showActions ? "xmark" : "ellipsis"}
-            size={20} 
-            color="#fff" 
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionHeaderButton, { backgroundColor: scheme === 'dark' ? '#444' : tintColor }]}
-          onPress={handleAddMovie}
-        >
-          <IconSymbol name="plus" size={20} color="#fff" />
-        </TouchableOpacity>
+        {user?.role === 'admin' && (
+          <>
+            <TouchableOpacity
+              style={[styles.actionHeaderButton, { backgroundColor: showActions ? '#ff4444' : (scheme === 'dark' ? '#444' : tintColor) }]}
+              onPress={handleToggleActions}
+            >
+              <IconSymbol
+                name={showActions ? "xmark" : "ellipsis"}
+                size={20}
+                color="#fff"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionHeaderButton, { backgroundColor: scheme === 'dark' ? '#444' : tintColor }]}
+              onPress={handleAddMovie}
+            >
+              <IconSymbol name="plus" size={20} color="#fff" />
+            </TouchableOpacity>
+          </>
+        )}
       </ThemedView>
     </ThemedView>
   );
@@ -164,13 +183,15 @@ export default function HomeScreen() {
       <ThemedText style={styles.emptyDescription}>
         Tambahkan film pertama Anda dengan menekan tombol + di atas
       </ThemedText>
-      <TouchableOpacity
-        style={[styles.addButton, { backgroundColor: tintColor }]}
-        onPress={handleAddMovie}
-      >
-        <IconSymbol name="plus" size={20} color="#fff" />
-        <ThemedText style={styles.addButtonText}>Tambah Film</ThemedText>
-      </TouchableOpacity>
+      {user?.role === 'admin' && (
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: tintColor }]}
+          onPress={handleAddMovie}
+        >
+          <IconSymbol name="plus" size={20} color="#fff" />
+          <ThemedText style={styles.addButtonText}>Tambah Film</ThemedText>
+        </TouchableOpacity>
+      )}
     </ThemedView>
   );
 
@@ -211,8 +232,8 @@ export default function HomeScreen() {
           }
           renderItem={({ item, index }) => (
             <View style={{ flex: 1 }}>
-              <MovieCard 
-                movie={item} 
+              <MovieCard
+                movie={item}
                 index={index}
                 showActions={showActions}
                 onDelete={handleDeleteMovie}

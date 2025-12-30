@@ -1,100 +1,163 @@
+import { supabase } from '@/lib/supabase';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform } from 'react-native';
+import Toast from 'react-native-toast-message';
+import { useAuthStorage } from './use-auth-storage';
 
 export type Booking = {
   id: string;
-  movieId?: string;
+  movieId?: string; // Supabase: movie_id
   title: string;
   showtime: string;
   quantity: number;
-  totalPrice: number;
-  createdAt: number;
+  totalPrice: number; // Supabase: total_price
+  createdAt: number; // Supabase: created_at (string)
   poster?: string | number;
-  customerName: string;
+  customerName: string; // Supabase: customer_name
   seats?: string[];
-  paymentStatus?: 'pending' | 'paid';
-  paymentMethod?: 'cash' | 'qris' | 'card';
+  paymentStatus?: 'pending' | 'paid'; // Supabase: payment_status
+  paymentMethod?: 'cash' | 'qris' | 'card'; // Supabase: payment_method
+  userId?: string; // Supabase: user_id
 };
 
-const STORAGE_KEY = 'BOOKINGS_STORAGE_V1';
-const MEMORY_KEY = '__BOOKINGS_STORAGE_MEM__';
-
-function safeParse<T>(raw: string | null): T | null {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
-function readBookings(): Booking[] {
-  // Web: gunakan localStorage
-  if (Platform.OS === 'web') {
-    const ls = typeof window !== 'undefined' ? window.localStorage : undefined;
-    const parsed = safeParse<Booking[]>(ls?.getItem(STORAGE_KEY) ?? null);
-    return Array.isArray(parsed) ? parsed : [];
-  }
-  // Native: fallback ke penyimpanan memory per sesi agar tidak crash di Expo Go
-  const mem: any = globalThis as any;
-  const existing = mem[MEMORY_KEY] as Booking[] | undefined;
-  return Array.isArray(existing) ? existing : [];
-}
-
-function writeBookings(bookings: Booking[]) {
-  if (Platform.OS === 'web') {
-    const ls = typeof window !== 'undefined' ? window.localStorage : undefined;
-    ls?.setItem(STORAGE_KEY, JSON.stringify(bookings));
-    return;
-  }
-  const mem: any = globalThis as any;
-  mem[MEMORY_KEY] = bookings;
-}
-
 export function useBookingStorage() {
-  const [bookings, setBookings] = useState<Booking[]>(() => readBookings());
+  const { user } = useAuthStorage();
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const fetchBookings = useCallback(async () => {
+    if (!user) {
+      setBookings([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Admin sees all, User sees own.
+      // RLS policies on Supabase should handle this, but we can also filter here if needed.
+      // However, relying on RLS is safer. We just select * from bookings.
+
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const mapped: Booking[] = data.map((item: any) => ({
+          id: item.id,
+          movieId: item.movie_id,
+          title: item.title,
+          showtime: item.showtime,
+          quantity: item.quantity,
+          totalPrice: item.total_price,
+          createdAt: new Date(item.created_at).getTime(),
+          poster: item.poster,
+          customerName: item.customer_name,
+          seats: item.seats,
+          paymentStatus: item.payment_status,
+          paymentMethod: item.payment_method,
+          userId: item.user_id,
+        }));
+        setBookings(mapped);
+      }
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      Toast.show({ type: 'error', text1: 'Gagal memuat riwayat pesanan' });
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
-    // Sinkronisasi awal dari storage sesuai platform
-    setBookings(readBookings());
-  }, []);
+    fetchBookings();
+  }, [fetchBookings]);
 
   const refresh = useCallback(() => {
-    setBookings(readBookings());
+    fetchBookings();
+  }, [fetchBookings]);
+
+  const addBooking = useCallback(async (data: Omit<Booking, 'id' | 'createdAt'>) => {
+    if (!user) {
+      Toast.show({ type: 'error', text1: 'Silakan login terlebih dahulu' });
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      const payload = {
+        user_id: user.id,
+        movie_id: data.movieId,
+        title: data.title,
+        showtime: data.showtime,
+        quantity: data.quantity,
+        total_price: data.totalPrice,
+        poster: typeof data.poster === 'string' ? data.poster : null,
+        customer_name: data.customerName,
+        seats: data.seats,
+        payment_status: data.paymentStatus || 'pending',
+        payment_method: data.paymentMethod,
+      };
+
+      const { data: inserted, error } = await supabase
+        .from('bookings')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (inserted) {
+        const newBooking: Booking = {
+          id: inserted.id,
+          movieId: inserted.movie_id,
+          title: inserted.title,
+          showtime: inserted.showtime,
+          quantity: inserted.quantity,
+          totalPrice: inserted.total_price,
+          createdAt: new Date(inserted.created_at).getTime(),
+          poster: inserted.poster,
+          customerName: inserted.customer_name,
+          seats: inserted.seats,
+          paymentStatus: inserted.payment_status,
+          paymentMethod: inserted.payment_method,
+          userId: inserted.user_id,
+        };
+
+        setBookings(prev => [newBooking, ...prev]);
+        return newBooking;
+      }
+    } catch (error) {
+      console.error('Error adding booking:', error);
+      Toast.show({ type: 'error', text1: 'Gagal menyimpan pesanan' });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Remove booking is not typically allowed for users, maybe admin only?
+  // For now we keep it but connected to Supabase delete
+  const removeBooking = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase.from('bookings').delete().eq('id', id);
+      if (error) throw error;
+      setBookings(prev => prev.filter(b => b.id !== id));
+    } catch (error) {
+      console.error('Error removing booking:', error);
+      Toast.show({ type: 'error', text1: 'Gagal menghapus pesanan' });
+    }
   }, []);
 
-  const addBooking = useCallback((data: Omit<Booking, 'id' | 'createdAt'>) => {
-    const newBooking: Booking = {
-      id: Math.random().toString(36).slice(2),
-      createdAt: Date.now(),
-      ...data,
-    };
-    setBookings((prev) => {
-      const next = [newBooking, ...prev];
-      writeBookings(next);
-      return next;
-    });
-    return newBooking;
-  }, []);
-
-  const removeBooking = useCallback((id: string) => {
-    setBookings((prev) => {
-      const next = prev.filter((b) => b.id !== id);
-      writeBookings(next);
-      return next;
-    });
-  }, []);
-
-  const clearAll = useCallback(() => {
-    setBookings(() => {
-      writeBookings([]);
-      return [];
-    });
+  const clearAll = useCallback(async () => {
+    // Dangerous! Only for local dev or admin maybe?
+    // We'll leave it empty or implement if needed.
+    // For safety, let's just clear local state.
+    setBookings([]);
   }, []);
 
   const byNewest = useMemo(() => {
-    return [...bookings].sort((a, b) => b.createdAt - a.createdAt);
+    return bookings; // Already sorted by fetch
   }, [bookings]);
 
   return {

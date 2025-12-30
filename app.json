@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "UTS_MOBILE",
-    "slug": "UTS_MOBILE",
+    "name": "cinebook",
+    "slug": "cinebook",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "utsmobile",
+    "scheme": "cinebook",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -20,7 +20,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.UTS_MOBILE"
+      "package": "com.anonymous.cinebook"
     },
     "web": {
       "output": "static",

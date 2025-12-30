@@ -1,130 +1,147 @@
-import { useState, useEffect } from 'react';
-import { Platform } from 'react-native';
-import { Movie, MOVIES_VERSION } from '@/data/movies';
-
-const STORAGE_KEY = 'cinema_movies';
-const VERSION_KEY = 'cinema_movies_version';
-const MEMORY_KEY = '__MOVIES_STORAGE_MEM__';
-
-// Fungsi untuk memastikan data movies selalu tersedia
-const getInitialMovies = () => {
-  const { MOVIES } = require('@/data/movies');
-  return MOVIES;
-};
+import { Movie } from '@/data/movies';
+import { supabase } from '@/lib/supabase';
+import { useEffect, useState } from 'react';
+import Toast from 'react-native-toast-message';
 
 export function useMovieStorage() {
-  const [movies, setMovies] = useState<Movie[]>(getInitialMovies());
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load movies from storage sesuai platform
-  useEffect(() => {
+  const fetchMovies = async () => {
     try {
-      if (Platform.OS === 'web') {
-        const ls = typeof window !== 'undefined' ? window.localStorage : undefined;
-        if (ls) {
-          const stored = ls.getItem(STORAGE_KEY);
-          const storedVersion = ls.getItem(VERSION_KEY);
-          // Jika versi berbeda atau data belum ada, gunakan data default dari file
-          if (!stored || storedVersion !== String(MOVIES_VERSION)) {
-            const defaultMovies = getInitialMovies();
-            setMovies(defaultMovies);
-            ls.setItem(STORAGE_KEY, JSON.stringify(defaultMovies));
-            ls.setItem(VERSION_KEY, String(MOVIES_VERSION));
-          } else if (stored) {
-            try {
-              const parsedMovies = JSON.parse(stored);
-              if (Array.isArray(parsedMovies) && parsedMovies.length > 0) {
-                setMovies(parsedMovies);
-              } else {
-                // Jika data kosong atau bukan array, gunakan data default
-                const defaultMovies = getInitialMovies();
-                setMovies(defaultMovies);
-                ls.setItem(STORAGE_KEY, JSON.stringify(defaultMovies));
-                ls.setItem(VERSION_KEY, String(MOVIES_VERSION));
-              }
-            } catch (e) {
-              console.error('Error parsing stored movies:', e);
-              const defaultMovies = getInitialMovies();
-              setMovies(defaultMovies);
-              ls.setItem(STORAGE_KEY, JSON.stringify(defaultMovies));
-              ls.setItem(VERSION_KEY, String(MOVIES_VERSION));
-            }
-          }
-        }
-      } else {
-        // Untuk platform non-web (Expo Go)
-        const mem: any = globalThis as any;
-        const existing = mem[MEMORY_KEY] as Movie[] | undefined;
-        if (Array.isArray(existing) && existing.length > 0) {
-          setMovies(existing);
-        } else {
-          const defaultMovies = getInitialMovies();
-          setMovies(defaultMovies);
-          mem[MEMORY_KEY] = defaultMovies;
-        }
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('movies')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const mappedMovies: Movie[] = data.map((m: any) => ({
+          id: m.id,
+          title: m.title,
+          genre: m.genre,
+          durationMin: m.duration_minutes,
+          rating: m.rating,
+          synopsis: m.synopsis,
+          price: m.price,
+          poster: m.poster_url,
+          showtimes: m.showtimes || [],
+        }));
+        setMovies(mappedMovies);
       }
-    } catch (error) {
-      console.error('Error loading movies from storage:', error);
-      const defaultMovies = getInitialMovies();
-      setMovies(defaultMovies);
+    } catch (error: any) {
+      console.error('Error fetching movies:', error);
+      Toast.show({ type: 'error', text1: 'Gagal memuat film', text2: error.message });
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchMovies();
   }, []);
 
-  // Save movies ke storage sesuai platform
-  const saveMovies = (newMovies: Movie[]) => {
+  const addMovie = async (movieData: Omit<Movie, 'id'>) => {
     try {
-      if (Platform.OS === 'web') {
-        const ls = typeof window !== 'undefined' ? window.localStorage : undefined;
-        if (ls) {
-          ls.setItem(STORAGE_KEY, JSON.stringify(newMovies));
-          ls.setItem(VERSION_KEY, String(MOVIES_VERSION));
-          console.log('Movies saved to localStorage:', newMovies.length);
-        } else {
-          console.warn('localStorage not available');
-        }
-      } else {
-        // Untuk platform non-web (Expo Go)
-        const mem: any = globalThis as any;
-        mem[MEMORY_KEY] = [...newMovies]; // Gunakan spread operator untuk memastikan array baru
-        console.log('Movies saved to memory:', newMovies.length);
+      const { data, error } = await supabase
+        .from('movies')
+        .insert({
+          title: movieData.title,
+          genre: movieData.genre,
+          duration_minutes: movieData.durationMin,
+          rating: movieData.rating,
+          synopsis: movieData.synopsis,
+          price: movieData.price,
+          poster_url: movieData.poster,
+          showtimes: movieData.showtimes,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const newMovie: Movie = {
+          id: data.id,
+          title: data.title,
+          genre: data.genre,
+          durationMin: data.duration_minutes,
+          rating: data.rating,
+          synopsis: data.synopsis,
+          price: data.price,
+          poster: data.poster_url,
+          showtimes: data.showtimes || [],
+        };
+        setMovies([newMovie, ...movies]);
+        return newMovie;
       }
-      setMovies([...newMovies]); // Gunakan spread operator untuk memastikan state diupdate
-    } catch (error) {
-      console.error('Error saving movies to storage:', error);
-      // Tetap update state meskipun gagal menyimpan ke storage
-      setMovies([...newMovies]);
+    } catch (error: any) {
+      console.error('Error adding movie:', error);
+      throw error;
     }
   };
 
-  // Add new movie
-  const addMovie = (movieData: Omit<Movie, 'id'>) => {
-    const newMovie: Movie = {
-      ...movieData,
-      id: `movie_${Date.now().toString()}`, // ID yang lebih unik
-    };
-    const updatedMovies = [...movies, newMovie];
-    saveMovies(updatedMovies);
-    return newMovie;
+  const updateMovie = async (id: string, movieData: Partial<Omit<Movie, 'id'>>) => {
+    try {
+      const updates: any = {};
+      if (movieData.title) updates.title = movieData.title;
+      if (movieData.genre) updates.genre = movieData.genre;
+      if (movieData.durationMin) updates.duration_minutes = movieData.durationMin;
+      if (movieData.rating) updates.rating = movieData.rating;
+      if (movieData.synopsis) updates.synopsis = movieData.synopsis;
+      if (movieData.price) updates.price = movieData.price;
+      if (movieData.poster) updates.poster_url = movieData.poster;
+      if (movieData.showtimes) updates.showtimes = movieData.showtimes;
+
+      const { data, error } = await supabase
+        .from('movies')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const updatedMovies = movies.map(m =>
+          m.id === id ? {
+            ...m,
+            title: data.title,
+            genre: data.genre,
+            durationMin: data.duration_minutes,
+            rating: data.rating,
+            synopsis: data.synopsis,
+            price: data.price,
+            poster: data.poster_url,
+            showtimes: data.showtimes || [],
+          } : m
+        );
+        setMovies(updatedMovies);
+      }
+    } catch (error: any) {
+      console.error('Error updating movie:', error);
+      throw error;
+    }
   };
 
-  // Update existing movie
-  const updateMovie = (id: string, movieData: Partial<Omit<Movie, 'id'>>) => {
-    const updatedMovies = movies.map(movie =>
-      movie.id === id ? { ...movie, ...movieData } : movie
-    );
-    saveMovies(updatedMovies);
-    return updatedMovies.find(movie => movie.id === id);
+  const deleteMovie = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('movies')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setMovies(movies.filter(m => m.id !== id));
+    } catch (error: any) {
+      console.error('Error deleting movie:', error);
+      Toast.show({ type: 'error', text1: 'Gagal menghapus film', text2: error.message });
+    }
   };
 
-  // Delete movie
-  const deleteMovie = (id: string) => {
-    const updatedMovies = movies.filter(movie => movie.id !== id);
-    saveMovies(updatedMovies);
-  };
-
-  // Get movie by ID
   const getMovieById = (id: string) => {
     return movies.find(movie => movie.id === id);
   };
@@ -136,5 +153,6 @@ export function useMovieStorage() {
     updateMovie,
     deleteMovie,
     getMovieById,
+    refreshMovies: fetchMovies,
   };
 }

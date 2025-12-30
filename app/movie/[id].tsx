@@ -1,10 +1,10 @@
-import { useLocalSearchParams, router } from 'expo-router';
-import { StyleSheet, ScrollView } from 'react-native';
-import { useMovieStorage } from '@/hooks/use-movie-storage';
-import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
-import { Image } from 'expo-image';
+import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
+import { useMovieStorage } from '@/hooks/use-movie-storage';
+import { Image } from 'expo-image';
+import { router, useLocalSearchParams } from 'expo-router';
+import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 
 export default function MovieDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -38,9 +38,12 @@ export default function MovieDetailScreen() {
         <ThemedText>{movie.showtimes.join(' | ')}</ThemedText>
         <ThemedText style={styles.price}>Harga: Rp {movie.price.toLocaleString('id-ID')}</ThemedText>
 
-        <ThemedText type="link" style={styles.link} onPress={() => router.push({ pathname: '/(tabs)/add', params: { movieId: movie.id } })}>
-          Beli Tiket
-        </ThemedText>
+        <TouchableOpacity
+          style={[styles.buyButton, { backgroundColor: Colors.light.tint }]}
+          onPress={() => router.push({ pathname: '/(tabs)/add', params: { movieId: movie.id } })}
+        >
+          <ThemedText style={styles.buyButtonText}>Beli Tiket</ThemedText>
+        </TouchableOpacity>
       </ThemedView>
     </ScrollView>
   );
@@ -80,5 +83,17 @@ const styles = StyleSheet.create({
   },
   link: {
     marginTop: 8,
+  },
+  buyButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buyButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

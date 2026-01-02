@@ -1,42 +1,49 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-
 import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
-import { useAuthStorage } from '@/hooks/use-auth-storage';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getShadowStyle } from '@/lib/ui-utils';
+import { Tabs } from 'expo-router';
+import { Home, Ticket, User } from 'lucide-react-native';
+import React from 'react';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { user } = useAuthStorage();
+  const theme = Colors[colorScheme ?? 'light'];
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].tabIconDefault,
+        tabBarActiveTintColor: theme.tint,
+        tabBarInactiveTintColor: theme.tabIconDefault,
         headerShown: false,
         tabBarButton: HapticTab,
+
+        // ...
         tabBarStyle: {
-          backgroundColor: Colors[colorScheme ?? 'light'].background,
+          backgroundColor: theme.background, // Match theme background
           borderTopWidth: 0,
-          height: 64,
-          paddingVertical: 8,
-          shadowColor: '#000',
-          shadowOpacity: 0.08,
-          shadowRadius: 6,
-          elevation: 8,
+          height: 90, // Increased height
+          paddingBottom: 30, // Increased padding to avoid clipping
+          paddingTop: 8,
+          ...getShadowStyle(0, 0, 0, 0), // No shadow (Flat) - web & native
+        },
+        tabBarLabelStyle: {
+          fontWeight: '600',
+          fontSize: 10,
+          marginTop: 4,
+          fontFamily: 'Inter_600SemiBold',
+        },
+        tabBarItemStyle: {
+          // Ensure items are centered vertically if needed, but default is usually fine
+          justifyContent: 'center',
+          marginTop: 4,
         }
-        ,
-        tabBarLabelStyle: { fontWeight: '600' },
-        tabBarItemStyle: { marginVertical: 4 }
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => <Home size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -45,19 +52,18 @@ export default function TabLayout() {
           href: null,
         }}
       />
-
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'History Pemesanan',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'My Orders',
+          tabBarIcon: ({ color }) => <Ticket size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          title: 'My Account',
+          tabBarIcon: ({ color }) => <User size={24} color={color} />,
         }}
       />
     </Tabs>

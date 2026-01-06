@@ -46,6 +46,9 @@ export default function HomeScreen() {
     </View>
   );
 
+  const nowPlaying = movies.filter(m => m.status === 'now_playing');
+  const comingSoon = movies.filter(m => m.status === 'coming_soon');
+
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
@@ -57,7 +60,7 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tintColor} />}
       >
         {/* Hero Carousel */}
-        <HeroCarousel movies={movies} />
+        <HeroCarousel movies={nowPlaying.slice(0, 5)} />
 
 
         {/* Start "Now Playing" Section */}
@@ -72,7 +75,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {movies.length === 0 ? (
+        {nowPlaying.length === 0 ? (
           <View style={styles.emptyState}>
             <ThemedText>Belum ada film yang tayang.</ThemedText>
             {user?.role === 'admin' && (
@@ -83,7 +86,7 @@ export default function HomeScreen() {
           </View>
         ) : (
           <FlatList
-            data={movies}
+            data={nowPlaying}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalList}
@@ -100,7 +103,7 @@ export default function HomeScreen() {
           />
         )}
 
-        {/* Example Coming Soon Section (Static for now to fill UI) */}
+        {/* Coming Soon Section */}
         <View style={[styles.sectionHeader, { marginTop: 24 }]}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>Coming Soon</ThemedText>
           <TouchableOpacity
@@ -111,9 +114,29 @@ export default function HomeScreen() {
             <ChevronRight size={16} color={tintColor} />
           </TouchableOpacity>
         </View>
-        <View style={{ height: 100, justifyContent: 'center', alignItems: 'center', opacity: 0.5 }}>
-          <ThemedText>No upcoming movies</ThemedText>
-        </View>
+
+        {comingSoon.length === 0 ? (
+          <View style={{ height: 100, justifyContent: 'center', alignItems: 'center', opacity: 0.5 }}>
+            <ThemedText>No upcoming movies</ThemedText>
+          </View>
+        ) : (
+          <FlatList
+            data={comingSoon}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalList}
+            keyExtractor={item => item.id}
+            renderItem={({ item, index }) => (
+              <MovieCard
+                movie={item}
+                index={index}
+                variant="portrait"
+                onDelete={user?.role === 'admin' ? deleteMovie : undefined}
+                showActions={user?.role === 'admin'}
+              />
+            )}
+          />
+        )}
 
       </ScrollView>
     </ThemedView>

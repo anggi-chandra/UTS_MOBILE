@@ -12,11 +12,15 @@ export default function SeeAllScreen() {
     const { movies } = useMovieStorage();
     const backgroundColor = useThemeColor({}, 'background');
 
-    // Filter logic can be added here if needed. 
-    // For now, "Now Playing" shows all movies.
-    // "Coming Soon" is currently empty in the home page logic, so we might want to simulate that or just show empty.
-
-    const displayMovies = title === 'Coming Soon' ? [] : movies;
+    const displayMovies = React.useMemo(() => {
+        if (title === 'Coming Soon') {
+            return movies.filter(m => m.status === 'coming_soon');
+        }
+        if (title === 'Now Playing') {
+            return movies.filter(m => m.status === 'now_playing');
+        }
+        return movies;
+    }, [movies, title]);
 
     return (
         <ThemedView style={styles.container}>

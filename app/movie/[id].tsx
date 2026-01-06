@@ -54,16 +54,25 @@ export default function MovieDetailScreen() {
 
         <ThemedText style={styles.meta}>{movie.genre} • {movie.durationMin}m • {movie.rating}</ThemedText>
         <ThemedText>{movie.synopsis}</ThemedText>
-        <ThemedText style={[styles.sectionTitle, { color: tint }]}>Jadwal Tayang</ThemedText>
-        <ThemedText>{movie.showtimes.join(' | ')}</ThemedText>
-        <ThemedText style={styles.price}>Harga: Rp {movie.price.toLocaleString('id-ID')}</ThemedText>
 
-        <TouchableOpacity
-          style={[styles.buyButton, { backgroundColor: tint }]}
-          onPress={() => router.push({ pathname: '/(tabs)/add', params: { movieId: movie.id } })}
-        >
-          <ThemedText style={styles.buyButtonText}>Beli Tiket</ThemedText>
-        </TouchableOpacity>
+        {movie.status === 'now_playing' ? (
+          <>
+            <ThemedText style={[styles.sectionTitle, { color: tint }]}>Jadwal Tayang</ThemedText>
+            <ThemedText>{movie.showtimes.join(' | ')}</ThemedText>
+            <ThemedText style={styles.price}>Harga: Rp {movie.price.toLocaleString('id-ID')}</ThemedText>
+
+            <TouchableOpacity
+              style={[styles.buyButton, { backgroundColor: tint }]}
+              onPress={() => router.push({ pathname: '/(tabs)/add', params: { movieId: movie.id } })}
+            >
+              <ThemedText style={styles.buyButtonText}>Beli Tiket</ThemedText>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <ThemedView style={[styles.comingSoonBadge, { borderColor: tint }]}>
+            <ThemedText style={[styles.comingSoonText, { color: tint }]}>COMING SOON</ThemedText>
+          </ThemedView>
+        )}
       </ThemedView>
     </ScrollView>
   );
@@ -121,5 +130,19 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  comingSoonBadge: {
+    marginTop: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignSelf: 'center',
+    alignItems: 'center',
+  },
+  comingSoonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 2,
   },
 });

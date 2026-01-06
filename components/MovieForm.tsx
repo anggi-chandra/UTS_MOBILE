@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Movie } from '@/data/movies';
 import { useColorSchemeController } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { decode } from 'base64-arraybuffer';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -250,6 +251,36 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
           </View>
         ) : null}
 
+        {/* Poster Upload */}
+        <ThemedView style={styles.inputGroup}>
+          <ThemedText style={styles.label}>Poster Film</ThemedText>
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+            <TouchableOpacity
+              style={[styles.uploadButton, { borderColor, backgroundColor: 'transparent', borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }]}
+              onPress={pickImage}
+            >
+              <Ionicons name="image-outline" size={20} color={textColor} />
+              <ThemedText style={{ color: textColor }}>Pilih dari Galeri</ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          <ThemedText style={[styles.label, { fontSize: 12, marginBottom: 5 }]}>Atau masukkan URL:</ThemedText>
+          <Controller
+            control={control}
+            name="poster"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, { borderColor, color: textColor }]}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                placeholder="https://example.com/poster.jpg"
+                placeholderTextColor={borderColor}
+              />
+            )}
+          />
+        </ThemedView>
+
         {/* Title */}
         <ThemedView style={styles.inputGroup}>
           <ThemedText style={styles.label}>Judul Film *</ThemedText>
@@ -348,108 +379,6 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
           )}
         </ThemedView>
 
-        {/* Price */}
-        <ThemedView style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Harga Tiket (Rp) *</ThemedText>
-          <Controller
-            control={control}
-            name="price"
-            rules={{
-              required: 'Harga wajib diisi',
-              pattern: {
-                value: /^[0-9]+$/,
-                message: 'Harga harus berupa angka'
-              },
-              min: { value: 1000, message: 'Harga minimal Rp 1.000' }
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, { borderColor, color: textColor }]}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                placeholder="Contoh: 50000"
-                placeholderTextColor={borderColor}
-                keyboardType="numeric"
-              />
-            )}
-          />
-          {errors.price && (
-            <ThemedText style={styles.errorText}>{errors.price.message}</ThemedText>
-          )}
-        </ThemedView>
-
-        {/* Poster: Upload atau URL */}
-        <ThemedView style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Poster *</ThemedText>
-          <TouchableOpacity
-            onPress={pickImage}
-            style={[styles.uploadButton, { borderColor, backgroundColor: primaryBtnBg }]}
-          >
-            <ThemedText style={[styles.buttonText, { color: '#fff' }]}>Upload Poster</ThemedText>
-          </TouchableOpacity>
-          <ThemedText style={styles.helperText}>Atau masukkan URL gambar</ThemedText>
-          <Controller
-            control={control}
-            name="poster"
-            rules={{
-              validate: (value) => {
-                if (imagePreview && imagePreview.length > 0) return true;
-                if (!value || value.trim().length === 0) return 'Poster wajib diisi';
-                const v = value.trim();
-                const ok = /^(https?:\/\/|blob:|file:).+/i.test(v);
-                return ok || 'Masukkan URL gambar valid atau upload gambar';
-              }
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, { borderColor, color: textColor }]}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                placeholder="https://example.com/poster.jpg"
-                placeholderTextColor={borderColor}
-                autoCapitalize="none"
-              />
-            )}
-          />
-          {errors.poster && (
-            <ThemedText style={styles.errorText}>{errors.poster.message}</ThemedText>
-          )}
-        </ThemedView>
-
-        {/* Showtimes */}
-        <ThemedView style={styles.inputGroup}>
-          <ThemedText style={styles.label}>Jadwal Tayang *</ThemedText>
-          <ThemedText style={styles.helperText}>
-            Pisahkan dengan koma. Contoh: 10:00, 13:00, 16:00, 19:00
-          </ThemedText>
-          <Controller
-            control={control}
-            name="showtimes"
-            rules={{
-              required: 'Jadwal tayang wajib diisi',
-              validate: (value) => {
-                const times = value.split(',').map(t => t.trim()).filter(t => t.length > 0);
-                return times.length > 0 || 'Minimal satu jadwal tayang';
-              }
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, { borderColor, color: textColor }]}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                placeholder="10:00, 13:00, 16:00, 19:00"
-                placeholderTextColor={borderColor}
-              />
-            )}
-          />
-          {errors.showtimes && (
-            <ThemedText style={styles.errorText}>{errors.showtimes.message}</ThemedText>
-          )}
-        </ThemedView>
-
         {/* Status */}
         <ThemedView style={styles.inputGroup}>
           <ThemedText style={styles.label}>Status Film *</ThemedText>
@@ -461,7 +390,17 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
               <View style={[styles.input, { borderColor, padding: 0, justifyContent: 'center' }]}>
                 <Picker
                   selectedValue={value}
-                  onValueChange={onChange}
+                  onValueChange={(itemValue) => {
+                    onChange(itemValue);
+                    // Reset fields if switching to coming_soon
+                    if (itemValue === 'coming_soon') {
+                      setValue('price', '0');
+                      setValue('showtimes', '-');
+                    } else {
+                      if (watch('price') === '0') setValue('price', '');
+                      if (watch('showtimes') === '-') setValue('showtimes', '');
+                    }
+                  }}
                   style={{ color: textColor }}
                   dropdownIconColor={textColor}
                 >
@@ -472,6 +411,73 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
             )}
           />
         </ThemedView>
+
+        {/* Price - Only show if Now Playing */}
+        {watch('status') === 'now_playing' && (
+          <ThemedView style={styles.inputGroup}>
+            <ThemedText style={styles.label}>Harga Tiket (Rp) *</ThemedText>
+            <Controller
+              control={control}
+              name="price"
+              rules={{
+                required: 'Harga wajib diisi',
+                pattern: {
+                  value: /^[0-9]+$/,
+                  message: 'Harga harus berupa angka'
+                },
+                min: { value: 1000, message: 'Harga minimal Rp 1.000' }
+              }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[styles.input, { borderColor, color: textColor }]}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  placeholder="Contoh: 50000"
+                  placeholderTextColor={borderColor}
+                  keyboardType="numeric"
+                />
+              )}
+            />
+            {errors.price && (
+              <ThemedText style={styles.errorText}>{errors.price.message}</ThemedText>
+            )}
+          </ThemedView>
+        )}
+
+        {/* Showtimes - Only show if Now Playing */}
+        {watch('status') === 'now_playing' && (
+          <ThemedView style={styles.inputGroup}>
+            <ThemedText style={styles.label}>Jadwal Tayang *</ThemedText>
+            <ThemedText style={styles.helperText}>
+              Pisahkan dengan koma. Contoh: 10:00, 13:00, 16:00, 19:00
+            </ThemedText>
+            <Controller
+              control={control}
+              name="showtimes"
+              rules={{
+                required: 'Jadwal tayang wajib diisi',
+                validate: (value) => {
+                  const times = value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                  return times.length > 0 || 'Minimal satu jadwal tayang';
+                }
+              }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[styles.input, { borderColor, color: textColor }]}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  placeholder="10:00, 13:00, 16:00, 19:00"
+                  placeholderTextColor={borderColor}
+                />
+              )}
+            />
+            {errors.showtimes && (
+              <ThemedText style={styles.errorText}>{errors.showtimes.message}</ThemedText>
+            )}
+          </ThemedView>
+        )}
 
         {/* Synopsis */}
         <ThemedView style={styles.inputGroup}>

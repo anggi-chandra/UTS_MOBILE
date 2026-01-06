@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, TouchableOpacity, View, ScrollView } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
-import { ThemedText } from '@/components/themed-text';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
 

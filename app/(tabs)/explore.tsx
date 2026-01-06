@@ -55,6 +55,7 @@ export default function BookingHistoryScreen() {
               <ThemedView style={styles.card}>
                 <ThemedText type="defaultSemiBold">{item.title}</ThemedText>
                 <ThemedText style={styles.muted}>Jadwal: {item.showtime}</ThemedText>
+                <ThemedText style={styles.muted}>Kursi: {item.seats?.join(', ') || '-'}</ThemedText>
                 <ThemedText style={styles.muted}>Jumlah: {item.quantity} tiket</ThemedText>
                 <ThemedText style={styles.muted}>Pemesan: {item.customerName}</ThemedText>
                 <ThemedText style={styles.total}>Total: Rp {item.totalPrice.toLocaleString('id-ID')}</ThemedText>

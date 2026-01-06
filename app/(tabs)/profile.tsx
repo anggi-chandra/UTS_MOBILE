@@ -53,6 +53,17 @@ export default function ProfileScreen() {
                     <>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Account Settings</Text>
 
+                        {user?.role === 'admin' && (
+                            <TouchableOpacity
+                                style={[styles.menuItem, { borderBottomColor: theme.icon }]}
+                                onPress={() => router.push('/manage-movie')}
+                            >
+                                <IconSymbol name="film.fill" size={24} color={theme.text} />
+                                <Text style={[styles.menuText, { color: theme.text }]}>Add Movie</Text>
+                                <IconSymbol name="chevron.right" size={20} color={theme.icon} />
+                            </TouchableOpacity>
+                        )}
+
                         <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.icon }]}
                             onPress={() => router.push('/profile/edit')}

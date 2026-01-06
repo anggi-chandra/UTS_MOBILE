@@ -2,13 +2,14 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import ThemedDropdown, { DropdownItem } from '@/components/ui/themed-dropdown';
 import { useBookingStorage } from '@/hooks/use-booking-storage';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Picker } from '@react-native-picker/picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, TextInput, View, useColorScheme } from 'react-native';
+import { Platform, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 type FormValues = {
@@ -28,7 +29,8 @@ export default function AddTicketScreen() {
   const borderColor = useThemeColor({}, 'icon');
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
-  const pickerBgColor = isDark ? '#333333' : '#ffffff';
+  // Use theme-aware colors for the input background
+  const inputBgColor = isDark ? '#132F38' : '#FFFFFF'; // Surface color from theme
   const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     defaultValues: { movieId: '', showtime: '', tickets: '1', customerName: '' },
     mode: 'onBlur',
@@ -70,8 +72,17 @@ export default function AddTicketScreen() {
         control={control}
         name="movieId"
         rules={{ required: 'Film wajib dipilih' }}
-        render={({ field: { onChange, value } }) => (
-          Platform.OS === 'web' ? (
+        render={({ field: { onChange, value } }) => {
+          // Jika ada params.movieId, tampilkan sebagai teks biasa (read-only)
+          if (params.movieId && selectedMovie) {
+            return (
+              <View style={[styles.input, { borderColor, backgroundColor: inputBgColor, justifyContent: 'center' }]}>
+                <ThemedText style={{ color: textColor }}>{selectedMovie.title}</ThemedText>
+              </View>
+            );
+          }
+
+          return Platform.OS === 'web' ? (
             <ThemedDropdown
               items={[{ label: '-- Pilih Film --', value: '' }, ...movies.map(m => ({ label: m.title, value: m.id }))] as DropdownItem[]}
               selectedValue={value}
@@ -92,8 +103,8 @@ export default function AddTicketScreen() {
                 ))}
               </Picker>
             </View>
-          )
-        )}
+          );
+        }}
       />
       {errors.movieId && <ThemedText style={styles.error}>{errors.movieId.message}</ThemedText>}
 
@@ -183,9 +194,9 @@ export default function AddTicketScreen() {
       {errors.customerName && <ThemedText style={styles.error}>{errors.customerName.message}</ThemedText>}
 
       <View style={{ height: 12 }} />
-      <ThemedText type="link" onPress={handleSubmit(onSubmit)} style={styles.submit}>
-        Simpan Pesanan
-      </ThemedText>
+      <TouchableOpacity onPress={handleSubmit(onSubmit)} style={[styles.submitButton, { backgroundColor: useThemeColor({}, 'tint') }]}>
+        <ThemedText style={styles.submitButtonText}>Simpan Pesanan</ThemedText>
+      </TouchableOpacity>
     </ThemedView>
   );
 }
@@ -217,7 +228,17 @@ const styles = StyleSheet.create({
   error: {
     color: 'crimson',
   },
-  submit: {
-    alignSelf: 'flex-start',
+  submitButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

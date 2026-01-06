@@ -14,6 +14,8 @@ type Method = 'qris' | 'cash' | 'card';
 export default function PaymentScreen() {
   const router = useRouter();
   const tint = useThemeColor({}, 'tint');
+  const iconColor = useThemeColor({}, 'icon');
+  const textColor = useThemeColor({}, 'text');
   const params = useLocalSearchParams<{ movieId?: string; showtime?: string; tickets?: string; customerName?: string; seats?: string }>();
   const { addBooking } = useBookingStorage();
   const [method, setMethod] = useState<Method>('qris');
@@ -107,10 +109,10 @@ export default function PaymentScreen() {
                 style={[styles.methodBtn, { backgroundColor: method === m ? tint : 'transparent', borderColor: tint }]}
               >
                 <View style={styles.methodInner}>
-                  {m === 'qris' && <IconSymbol name="qrcode" size={18} color={method === m ? contrastOnTint : tint} />}
-                  {m === 'cash' && <IconSymbol name="banknote" size={18} color={method === m ? contrastOnTint : tint} />}
-                  {m === 'card' && <IconSymbol name="creditcard" size={18} color={method === m ? contrastOnTint : tint} />}
-                  <ThemedText style={[styles.methodText, { color: method === m ? contrastOnTint : undefined }]}>
+                  {m === 'qris' && <IconSymbol name="qrcode" size={18} color={method === m ? contrastOnTint : iconColor} />}
+                  {m === 'cash' && <IconSymbol name="banknote" size={18} color={method === m ? contrastOnTint : iconColor} />}
+                  {m === 'card' && <IconSymbol name="creditcard" size={18} color={method === m ? contrastOnTint : iconColor} />}
+                  <ThemedText style={[styles.methodText, { color: method === m ? contrastOnTint : textColor }]}>
                     {m === 'qris' ? 'QRIS' : m === 'cash' ? 'Cash' : 'Card'}
                   </ThemedText>
                 </View>

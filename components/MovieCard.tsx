@@ -82,7 +82,7 @@ export function MovieCard({
           backgroundColor: isPortrait ? 'transparent' : backgroundColor,
           marginRight: isPortrait ? 16 : 0,
           marginBottom: isPortrait ? 0 : 20,
-          ...getShadowStyle(isPortrait ? 0 : 0.1, 12, 8, 4), // Dynamic shadow
+          ...getShadowStyle(isPortrait ? 0 : 0.1, 12, 8, isPortrait ? 0 : 4), // Dynamic shadow
         },
       ]}
     >

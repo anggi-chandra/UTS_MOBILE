@@ -28,6 +28,7 @@ export function useMovieStorage() {
           price: m.price,
           poster: m.poster_url,
           showtimes: m.showtimes || [],
+          status: m.status || 'now_playing',
         }));
         setMovies(mappedMovies);
       }
@@ -56,6 +57,7 @@ export function useMovieStorage() {
           price: movieData.price,
           poster_url: movieData.poster,
           showtimes: movieData.showtimes,
+          status: movieData.status,
         })
         .select()
         .single();
@@ -73,6 +75,7 @@ export function useMovieStorage() {
           price: data.price,
           poster: data.poster_url,
           showtimes: data.showtimes || [],
+          status: data.status || 'now_playing',
         };
         setMovies([newMovie, ...movies]);
         return newMovie;
@@ -94,6 +97,7 @@ export function useMovieStorage() {
       if (movieData.price) updates.price = movieData.price;
       if (movieData.poster) updates.poster_url = movieData.poster;
       if (movieData.showtimes) updates.showtimes = movieData.showtimes;
+      if (movieData.status) updates.status = movieData.status;
 
       const { data, error } = await supabase
         .from('movies')
@@ -116,6 +120,7 @@ export function useMovieStorage() {
             price: data.price,
             poster: data.poster_url,
             showtimes: data.showtimes || [],
+            status: data.status || 'now_playing',
           } : m
         );
         setMovies(updatedMovies);

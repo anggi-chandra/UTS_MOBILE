@@ -8,6 +8,7 @@ export type Movie = {
   synopsis: string;
   showtimes: string[];
   price: number; // per ticket
+  status: 'now_playing' | 'coming_soon';
 };
 
 // Versi data default untuk sinkronisasi storage web
@@ -25,6 +26,7 @@ export const MOVIES: Movie[] = [
       'Cars adalah tentang Lightning McQueen, sebuah mobil balap pemula yang sombong, yang tersesat dan terdampar di kota kecil Radiator Springs saat menuju balapan besar, Piala Piston. Di sana, ia perlahan-lahan belajar tentang persahabatan, nilai-nilai hidup, dan menjadi orang yang lebih baik dari penduduk kota, terutama Doc Hudson dan Mater. Perjalanan ini membuatnya menyadari bahwa kemenangan bukanlah segalanya dan persahabatan jauh lebih berharga. .',
     showtimes: ['12:00', '15:00', '18:30', '21:00'],
     price: 40000,
+    status: 'now_playing',
   },
   {
     id: 'mv-002',
@@ -37,6 +39,7 @@ export const MOVIES: Movie[] = [
       'The Fall Guy adalah film yang menceritakan Colt Seavers (Ryan Gosling), seorang stuntman Hollywood yang kembali bekerja setelah pensiun dini akibat kecelakaan. Ia harus kembali ke dunia perfilman saat bintang film dalam proyek yang disutradarai oleh mantannya, Jody Moreno (Emily Blunt), menghilang secara misterius. Colt kemudian terseret dalam sebuah konspirasi berbahaya saat ia mencoba menemukan bintang tersebut. ',
     showtimes: ['11:15', '14:45', '17:15', '20:00'],
     price: 50000,
+    status: 'now_playing',
   },
   {
     id: 'mv-003',
@@ -49,5 +52,6 @@ export const MOVIES: Movie[] = [
       'Perjalanan pahlawan mitis dan emosional, Dune"menceritakan kisah Paul Atreides, seorang pemuda cerdas dan berbakat yang lahir dalam takdir besar di luar pemahamannya, yang harus melakukan perjalanan ke planet paling berbahaya di alam semesta untuk memastikan masa depannya.',
     showtimes: ['10:00', '13:30', '16:00', '19:30'],
     price: 40000,
+    status: 'now_playing',
   },
 ];

@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Movie } from '@/data/movies';
 import { useColorSchemeController } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { Picker } from '@react-native-picker/picker';
 import { decode } from 'base64-arraybuffer';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
@@ -30,6 +31,7 @@ interface MovieFormData {
   price: string; // input string, converted to number
   poster: string; // URL string for new movies
   showtimes: string; // comma-separated input
+  status: 'now_playing' | 'coming_soon';
 }
 
 interface MovieFormProps {
@@ -60,6 +62,7 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
       price: movie?.price?.toString() || '',
       poster: typeof movie?.poster === 'string' ? (movie?.poster as string) : '',
       showtimes: movie?.showtimes?.join(', ') || '',
+      status: movie?.status || 'now_playing',
     }
   });
 
@@ -74,6 +77,7 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
         price: movie.price.toString(),
         poster: typeof movie.poster === 'string' ? (movie.poster as string) : '',
         showtimes: movie.showtimes?.join(', ') || '',
+        status: movie.status || 'now_playing',
       });
       setImagePreview(typeof movie.poster === 'string' ? (movie.poster as string) : '');
     }
@@ -164,6 +168,7 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
         price: parseInt(data.price),
         poster: posterUri || (movie ? movie.poster : ''),
         showtimes: data.showtimes.split(',').map(time => time.trim()).filter(time => time.length > 0),
+        status: data.status,
       };
 
       await onSubmit(movieData);
@@ -443,6 +448,29 @@ export function MovieForm({ movie, onSubmit, onCancel }: MovieFormProps) {
           {errors.showtimes && (
             <ThemedText style={styles.errorText}>{errors.showtimes.message}</ThemedText>
           )}
+        </ThemedView>
+
+        {/* Status */}
+        <ThemedView style={styles.inputGroup}>
+          <ThemedText style={styles.label}>Status Film *</ThemedText>
+          <Controller
+            control={control}
+            name="status"
+            rules={{ required: 'Status wajib dipilih' }}
+            render={({ field: { onChange, value } }) => (
+              <View style={[styles.input, { borderColor, padding: 0, justifyContent: 'center' }]}>
+                <Picker
+                  selectedValue={value}
+                  onValueChange={onChange}
+                  style={{ color: textColor }}
+                  dropdownIconColor={textColor}
+                >
+                  <Picker.Item label="Now Playing" value="now_playing" />
+                  <Picker.Item label="Coming Soon" value="coming_soon" />
+                </Picker>
+              </View>
+            )}
+          />
         </ThemedView>
 
         {/* Synopsis */}

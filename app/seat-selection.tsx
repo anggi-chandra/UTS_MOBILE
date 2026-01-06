@@ -1,14 +1,19 @@
-import React, { useMemo, useState } from 'react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, TouchableOpacity, View, ScrollView } from 'react-native';
+import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useBookingStorage } from '@/hooks/use-booking-storage';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function SeatSelectionScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ movieId?: string; showtime?: string; tickets?: string; customerName?: string }>();
   const tint = useThemeColor({}, 'tint');
+  const iconColor = useThemeColor({}, 'icon');
+  const textColor = useThemeColor({}, 'text');
+
   // Hitung warna teks yang kontras terhadap background (tint)
   const getContrastTextColor = (bg: string, fallback: string) => {
     try {
@@ -27,18 +32,25 @@ export default function SeatSelectionScreen() {
   };
 
   const { getMovieById } = useMovieStorage();
+  const { fetchBookedSeats } = useBookingStorage();
   const movie = useMemo(() => (params.movieId ? getMovieById(String(params.movieId)) : undefined), [params.movieId, getMovieById]);
   const qty = Number(params.tickets ?? '0');
 
-  const seatsAll = useMemo(() => {
-    const rows = ['A','B','C','D','E','F','G','H'];
-    const cols = Array.from({ length: 10 }, (_, i) => i + 1);
-    return rows.flatMap(r => cols.map(c => `${r}${c}`));
-  }, []);
+  const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+  const cols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [occupiedSeats, setOccupiedSeats] = useState<string[]>([]);
+
+  React.useEffect(() => {
+    if (movie && params.showtime) {
+      fetchBookedSeats(movie.id, String(params.showtime)).then(setOccupiedSeats);
+    }
+  }, [movie, params.showtime]);
 
   const toggleSeat = (seat: string) => {
+    if (occupiedSeats.includes(seat)) return;
+
     setSelectedSeats(prev => {
       if (prev.includes(seat)) {
         return prev.filter(s => s !== seat);
@@ -68,42 +80,128 @@ export default function SeatSelectionScreen() {
         <ThemedText type="title" style={styles.header}>Pilih Kursi</ThemedText>
         {movie ? (
           <>
-            <ThemedText>{movie.title}</ThemedText>
-            <ThemedText>Jadwal: {params.showtime}</ThemedText>
-            <ThemedText>Jumlah tiket: {qty}</ThemedText>
-            <View style={styles.grid}>
-              {seatsAll.map(seat => {
-                const selected = selectedSeats.includes(seat);
-                return (
-                  <TouchableOpacity
-                    key={seat}
-                    style={[styles.seat, { borderColor: selected ? tint : '#ccc', backgroundColor: selected ? tint : 'transparent' }]}
-                    onPress={() => toggleSeat(seat)}
-                  >
-                    <ThemedText style={[
-                      styles.seatLabel,
-                      { color: selected ? getContrastTextColor(tint, '#fff') : undefined },
-                    ]}
-                    >
-                      {seat}
-                    </ThemedText>
-                  </TouchableOpacity>
-                );
-              })}
+            <ThemedText style={styles.subHeader}>{movie.title}</ThemedText>
+            <ThemedText style={styles.subHeader}>Jadwal: {params.showtime}</ThemedText>
+            <ThemedText style={styles.subHeader}>Jumlah tiket: {qty}</ThemedText>
+
+            {/* Screen Indicator */}
+            <View style={styles.screenContainer}>
+              <View style={[styles.screenLine, { borderColor: tint }]} />
+              <ThemedText style={styles.screenText}>Layar Bioskop</ThemedText>
             </View>
-            <TouchableOpacity
-              disabled={!canProceed}
-              onPress={handleProceed}
-              style={[styles.proceedBtn, { backgroundColor: canProceed ? tint : '#aaa' }]}
-            >
-              <ThemedText style={[
-                styles.proceedText,
-                { color: getContrastTextColor(canProceed ? tint : '#aaa', '#fff') },
-              ]}
+
+            <View style={styles.grid}>
+              {rows.map((rowName) => (
+                <View key={rowName} style={styles.rowContainer}>
+                  {/* Left Side (1-5) */}
+                  {cols.slice(0, 5).map((colNum) => {
+                    const seat = `${rowName}${colNum}`;
+                    const isOccupied = occupiedSeats.includes(seat);
+                    const selected = selectedSeats.includes(seat);
+                    return (
+                      <TouchableOpacity
+                        key={seat}
+                        disabled={isOccupied}
+                        style={[
+                          styles.seat,
+                          {
+                            borderColor: isOccupied ? '#555' : (selected ? tint : iconColor),
+                            backgroundColor: isOccupied ? '#555' : (selected ? tint : 'transparent'),
+                            opacity: isOccupied ? 0.5 : 1,
+                          },
+                        ]}
+                        onPress={() => toggleSeat(seat)}
+                      >
+                        <ThemedText
+                          style={[
+                            styles.seatLabel,
+                            {
+                              color: isOccupied
+                                ? '#aaa'
+                                : (selected ? getContrastTextColor(tint, '#fff') : textColor),
+                              fontWeight: selected ? 'bold' : 'normal',
+                            },
+                          ]}
+                        >
+                          {seat}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    );
+                  })}
+
+                  {/* Aisle Gap */}
+                  <View style={styles.aisle} />
+
+                  {/* Right Side (6-10) */}
+                  {cols.slice(5).map((colNum) => {
+                    const seat = `${rowName}${colNum}`;
+                    const isOccupied = occupiedSeats.includes(seat);
+                    const selected = selectedSeats.includes(seat);
+                    return (
+                      <TouchableOpacity
+                        key={seat}
+                        disabled={isOccupied}
+                        style={[
+                          styles.seat,
+                          {
+                            borderColor: isOccupied ? '#555' : (selected ? tint : iconColor),
+                            backgroundColor: isOccupied ? '#555' : (selected ? tint : 'transparent'),
+                            opacity: isOccupied ? 0.5 : 1,
+                          },
+                        ]}
+                        onPress={() => toggleSeat(seat)}
+                      >
+                        <ThemedText
+                          style={[
+                            styles.seatLabel,
+                            {
+                              color: isOccupied
+                                ? '#aaa'
+                                : (selected ? getContrastTextColor(tint, '#fff') : textColor),
+                              fontWeight: selected ? 'bold' : 'normal',
+                            },
+                          ]}
+                        >
+                          {seat}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.footer}>
+              <View style={styles.legendContainer}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendBox, { borderColor: iconColor }]} />
+                  <ThemedText style={styles.legendText}>Tersedia</ThemedText>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendBox, { backgroundColor: tint, borderColor: tint }]} />
+                  <ThemedText style={styles.legendText}>Dipilih</ThemedText>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendBox, { backgroundColor: '#555', borderColor: '#555', opacity: 0.5 }]} />
+                  <ThemedText style={styles.legendText}>Terisi</ThemedText>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                disabled={!canProceed}
+                onPress={handleProceed}
+                style={[styles.proceedBtn, { backgroundColor: canProceed ? tint : '#aaa' }]}
               >
-                Lanjut Pembayaran
-              </ThemedText>
-            </TouchableOpacity>
+                <ThemedText
+                  style={[
+                    styles.proceedText,
+                    { color: getContrastTextColor(canProceed ? tint : '#aaa', '#fff') },
+                  ]}
+                >
+                  Lanjut Pembayaran
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
           </>
         ) : (
           <ThemedText>Data film tidak ditemukan</ThemedText>
@@ -114,29 +212,90 @@ export default function SeatSelectionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 12 },
-  scrollContent: { paddingBottom: 24 },
-  header: { marginBottom: 8 },
+  container: { flex: 1 },
+  scrollContent: { padding: 16, paddingBottom: 40 },
+  header: { marginBottom: 4, textAlign: 'center' },
+  subHeader: { fontSize: 14, opacity: 0.8, textAlign: 'center', marginBottom: 2 },
+
+  screenContainer: {
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 24,
+  },
+  screenLine: {
+    width: '80%',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'transparent',
+    borderTopWidth: 4,
+    opacity: 0.5,
+    marginBottom: 8,
+    transform: [{ perspective: 100 }, { rotateX: '10deg' }], // Slight 3D effect attempt
+  },
+  screenText: {
+    fontSize: 12,
+    opacity: 0.6,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+
   grid: {
+    gap: 10,
+    alignItems: 'center',
+  },
+  rowContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginVertical: 12,
+    alignItems: 'center',
+  },
+  aisle: {
+    width: 24, // Gap between left and right columns
   },
   seat: {
-    width: 48,
-    height: 48,
+    width: 32,
+    height: 32,
     borderWidth: 1,
     borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
+    marginHorizontal: 2,
   },
-  seatLabel: { fontSize: 12 },
+  seatLabel: {
+    fontSize: 10,
+  },
+
+  footer: {
+    marginTop: 32,
+    gap: 16,
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 24,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  legendBox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  legendText: {
+    fontSize: 12,
+  },
+
   proceedBtn: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  proceedText: { color: '#fff', fontWeight: '600' },
+  proceedText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });

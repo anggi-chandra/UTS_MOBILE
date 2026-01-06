@@ -2,13 +2,14 @@ import { HeroCarousel } from '@/components/HeroCarousel';
 import { MovieCard } from '@/components/MovieCard';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Fonts } from '@/constants/theme';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Colors, Fonts } from '@/constants/theme';
 import { useAuthStorage } from '@/hooks/use-auth-storage';
 import { useColorSchemeController } from '@/hooks/use-color-scheme';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useRouter } from 'expo-router';
-import { ChevronRight, MapPin, Search } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -17,7 +18,8 @@ export default function HomeScreen() {
   const { user } = useAuthStorage();
   const { movies, deleteMovie, refreshMovies } = useMovieStorage();
   const [refreshing, setRefreshing] = useState(false);
-  const { scheme } = useColorSchemeController();
+  const { scheme, toggleScheme } = useColorSchemeController();
+  const theme = Colors[scheme ?? 'light'];
   const tintColor = useThemeColor({}, 'tint');
 
   const onRefresh = useCallback(() => {
@@ -33,12 +35,12 @@ export default function HomeScreen() {
         <ThemedText style={styles.logoText}>CINEBOOK</ThemedText>
       </View>
       <View style={styles.headerRight}>
-        <TouchableOpacity style={styles.locationButton}>
-          <MapPin size={16} color="#fff" />
-          <ThemedText style={styles.locationText}>DENPASAR</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.searchButton}>
-          <Search size={22} color="#fff" />
+        <TouchableOpacity onPress={toggleScheme}>
+          <IconSymbol
+            name={scheme === 'dark' ? 'moon.fill' : 'sun.max.fill'}
+            size={24}
+            color={theme.text}
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -61,7 +63,10 @@ export default function HomeScreen() {
         {/* Start "Now Playing" Section */}
         <View style={styles.sectionHeader}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>Now playing</ThemedText>
-          <TouchableOpacity style={styles.seeAllButton}>
+          <TouchableOpacity
+            style={styles.seeAllButton}
+            onPress={() => router.push({ pathname: '/movie/see-all', params: { title: 'Now Playing' } })}
+          >
             <ThemedText style={[styles.seeAllText, { color: tintColor }]}>See all</ThemedText>
             <ChevronRight size={16} color={tintColor} />
           </TouchableOpacity>
@@ -98,7 +103,10 @@ export default function HomeScreen() {
         {/* Example Coming Soon Section (Static for now to fill UI) */}
         <View style={[styles.sectionHeader, { marginTop: 24 }]}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>Coming Soon</ThemedText>
-          <TouchableOpacity style={styles.seeAllButton}>
+          <TouchableOpacity
+            style={styles.seeAllButton}
+            onPress={() => router.push({ pathname: '/movie/see-all', params: { title: 'Coming Soon' } })}
+          >
             <ThemedText style={[styles.seeAllText, { color: tintColor }]}>See all</ThemedText>
             <ChevronRight size={16} color={tintColor} />
           </TouchableOpacity>
@@ -154,22 +162,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-  },
-  locationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 4,
-  },
-  locationText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  searchButton: {
-    padding: 4,
   },
   sectionSpacing: {
     marginTop: 8,

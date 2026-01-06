@@ -32,13 +32,11 @@ export function useBookingStorage() {
 
     try {
       setLoading(true);
-      // Admin sees all, User sees own.
-      // RLS policies on Supabase should handle this, but we can also filter here if needed.
-      // However, relying on RLS is safer. We just select * from bookings.
-
+      // Filter by user_id to ensure users only see their own history
       const { data, error } = await supabase
         .from('bookings')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -136,8 +134,6 @@ export function useBookingStorage() {
     }
   }, [user]);
 
-  // Remove booking is not typically allowed for users, maybe admin only?
-  // For now we keep it but connected to Supabase delete
   const removeBooking = useCallback(async (id: string) => {
     try {
       const { error } = await supabase.from('bookings').delete().eq('id', id);
@@ -150,10 +146,47 @@ export function useBookingStorage() {
   }, []);
 
   const clearAll = useCallback(async () => {
-    // Dangerous! Only for local dev or admin maybe?
-    // We'll leave it empty or implement if needed.
-    // For safety, let's just clear local state.
-    setBookings([]);
+    if (!user) return;
+    if (bookings.length === 0) return;
+
+    try {
+      setLoading(true);
+      const ids = bookings.map(b => b.id);
+      const { error } = await supabase.from('bookings').delete().in('id', ids);
+
+      if (error) throw error;
+
+      setBookings([]);
+      Toast.show({ type: 'success', text1: 'Semua riwayat berhasil dihapus' });
+    } catch (error) {
+      console.error('Error clearing bookings:', error);
+      Toast.show({ type: 'error', text1: 'Gagal menghapus riwayat' });
+    } finally {
+      setLoading(false);
+    }
+  }, [user, bookings]);
+
+  // New function to fetch booked seats for a specific movie session
+  const fetchBookedSeats = useCallback(async (movieId: string, showtime: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('seats')
+        .eq('movie_id', movieId)
+        .eq('showtime', showtime);
+
+      if (error) throw error;
+
+      if (data) {
+        // Flatten all seat arrays into a single array of strings
+        const allSeats = data.flatMap((b: any) => b.seats || []);
+        return allSeats;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching booked seats:', error);
+      return [];
+    }
   }, []);
 
   const byNewest = useMemo(() => {
@@ -168,5 +201,6 @@ export function useBookingStorage() {
     addBooking,
     removeBooking,
     clearAll,
+    fetchBookedSeats,
   };
 }

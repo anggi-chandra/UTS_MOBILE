@@ -22,6 +22,7 @@ const MAPPING = {
   'plus.app.fill': 'add-circle',
   'plus': 'add',
   'film': 'movie',
+  'film.fill': 'movie',
   'ellipsis.horizontal': 'more-horiz',
   'ellipsis': 'more-horiz',
   'moon.fill': 'dark-mode',

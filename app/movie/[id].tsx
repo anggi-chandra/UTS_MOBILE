@@ -4,6 +4,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Image } from 'expo-image';
+import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Share, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -16,8 +17,9 @@ export default function MovieDetailScreen() {
   const handleShare = async () => {
     if (!movie) return;
     try {
+      const url = Linking.createURL(`movie/${movie.id}`);
       await Share.share({
-        message: `Tonton film ${movie.title} di Cinebook! Klik link ini: cinebook://movie/${movie.id}`,
+        message: `Tonton film ${movie.title} di Cinebook! Klik link ini: ${url}`,
       });
     } catch (error) {
       console.error('Error sharing:', error);

@@ -4,7 +4,6 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Image } from 'expo-image';
-import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Share, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -17,20 +16,17 @@ export default function MovieDetailScreen() {
   const handleShare = async () => {
     if (!movie) return;
     try {
-      const url = Linking.createURL(`movie/${movie.id}`);
+      const deepLinkUrl = encodeURIComponent(`cinebook://movie/${movie.id}`);
+      // Updated to use the correct domain from user's dashboard: abr.ge
+      const airbridgeUrl = `https://abr.ge/@cinebook?deeplink_url=${deepLinkUrl}`;
+
       await Share.share({
-        message: `Tonton film ${movie.title} di Cinebook! Klik link ini: ${url}`,
+        message: `Tonton film ${movie.title} di Cinebook! Klik link ini: ${airbridgeUrl}`,
       });
     } catch (error) {
       console.error('Error sharing:', error);
     }
   };
-
-  if (loading) {
-    return (
-      <ThemedView style={styles.center}><ThemedText>Memuat detail film...</ThemedText></ThemedView>
-    );
-  }
 
   if (!movie) {
     return (

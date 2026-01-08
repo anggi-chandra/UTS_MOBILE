@@ -54,6 +54,13 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "airbridge-expo-sdk",
+        {
+          "appName": "cinebook",
+          "appToken": "b980ea8e3b4a48618d0f9f70d2e4f1a5"
+        }
       ]
     ],
     "experiments": {

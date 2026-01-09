@@ -12,13 +12,13 @@ import {
   useFonts as useOutfitFonts,
 } from '@expo-google-fonts/outfit';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import Airbridge from 'airbridge-expo-sdk';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
-
 
 
 import { Colors } from '@/constants/theme';
@@ -69,6 +69,14 @@ function RootLayoutInner() {
 
   useEffect(() => {
     initialize();
+  }, []);
+
+  useEffect(() => {
+    if (Airbridge && (Airbridge as any).init) {
+      (Airbridge as any).init("Nama Project", "token SDK");
+    } else {
+      console.log("Airbridge is not available");
+    }
   }, []);
 
   return (

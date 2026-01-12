@@ -12,7 +12,7 @@ import {
   useFonts as useOutfitFonts,
 } from '@expo-google-fonts/outfit';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import Airbridge from 'airbridge-expo-sdk';
+import Airbridge from 'airbridge-react-native-sdk';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';

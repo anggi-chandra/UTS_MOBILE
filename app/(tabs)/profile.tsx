@@ -56,10 +56,10 @@ export default function ProfileScreen() {
                         {user?.role === 'admin' && (
                             <TouchableOpacity
                                 style={[styles.menuItem, { borderBottomColor: theme.icon }]}
-                                onPress={() => router.push('/manage-movie')}
+                                onPress={() => router.push('/admin/movies' as any)}
                             >
                                 <IconSymbol name="film.fill" size={24} color={theme.text} />
-                                <Text style={[styles.menuText, { color: theme.text }]}>Add Movie</Text>
+                                <Text style={[styles.menuText, { color: theme.text }]}>Manage Movies</Text>
                                 <IconSymbol name="chevron.right" size={20} color={theme.icon} />
                             </TouchableOpacity>
                         )}

@@ -18,6 +18,7 @@ interface MovieCardProps {
   index: number;
   onEdit?: (movie: Movie) => void;
   onDelete?: (movieId: string) => void;
+  onPress?: (movie: Movie) => void;
   showActions?: boolean;
   variant?: 'standard' | 'portrait';
 }
@@ -27,6 +28,7 @@ export function MovieCard({
   index,
   onEdit,
   onDelete,
+  onPress,
   showActions = false,
   variant = 'standard'
 }: MovieCardProps) {
@@ -34,7 +36,7 @@ export function MovieCard({
   const { width } = useWindowDimensions();
   const isTablet = width > 768;
 
-  const backgroundColor = useThemeColor({}, 'surface'); // Changed to surface for better contrast
+  const backgroundColor = useThemeColor({}, 'surface');
   const tintColor = useThemeColor({}, 'tint');
   const { scheme } = useColorSchemeController();
 
@@ -42,7 +44,11 @@ export function MovieCard({
   const cardWidth = isPortrait ? 160 : (isTablet ? (width - 60) / 2 : width - 40);
 
   const handlePress = () => {
-    router.push(`/movie/${movie.id}`);
+    if (onPress) {
+      onPress(movie);
+    } else {
+      router.push(`/movie/${movie.id}`);
+    }
   };
 
   const handleEdit = () => {
@@ -82,7 +88,7 @@ export function MovieCard({
           backgroundColor: isPortrait ? 'transparent' : backgroundColor,
           marginRight: isPortrait ? 16 : 0,
           marginBottom: isPortrait ? 0 : 20,
-          ...getShadowStyle(isPortrait ? 0 : 0.1, 12, 8, isPortrait ? 0 : 4), // Dynamic shadow
+          ...getShadowStyle(isPortrait ? 0 : 0.1, 12, 8, isPortrait ? 0 : 4),
         },
       ]}
     >
@@ -95,7 +101,6 @@ export function MovieCard({
             transition={500}
           />
 
-          {/* Portrait Variant: Clean overlay badges */}
           {isPortrait && (
             <>
               <LinearGradient
@@ -108,7 +113,6 @@ export function MovieCard({
             </>
           )}
 
-          {/* Standard Variant: Badges */}
           {!isPortrait && (
             <>
               <View style={[styles.priceBadge, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
@@ -164,7 +168,6 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     overflow: 'visible',
-    // removed static legacy shadow props
   },
   touchable: {
     borderRadius: 16,
@@ -178,14 +181,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   posterPortrait: {
-    // Specifically for portrait variant if needed
   },
   poster: {
     width: '100%',
     height: '100%',
   },
-
-  // Standard Content Styles
   content: {
     padding: 16,
     paddingTop: 12,
@@ -210,8 +210,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
   },
   duration: { fontSize: 12, fontWeight: '600', opacity: 0.8 },
-
-  // Portrait Styles
   portraitTitle: {
     fontSize: 14,
     fontWeight: '600',
@@ -232,8 +230,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
-
-  // Actions & Badges (Standard)
   actionButtons: { position: 'absolute', top: 12, right: 12, flexDirection: 'column', gap: 8 },
   actionButton: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
   priceBadge: { position: 'absolute', right: 12, bottom: 12, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, overflow: 'hidden' },
@@ -241,7 +237,4 @@ const styles = StyleSheet.create({
   topBadgesContainer: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 8 },
   ratingBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, gap: 4 },
   ratingBadgeText: { fontSize: 12, fontWeight: '700' },
-
-  // Unused legacy
-  rating: {}, details: {}, priceNote: {},
 });

@@ -8,7 +8,7 @@ import { useAuthStorage } from '@/hooks/use-auth-storage';
 import { useColorSchemeController } from '@/hooks/use-color-scheme';
 import { useMovieStorage } from '@/hooks/use-movie-storage';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -26,6 +26,12 @@ export default function HomeScreen() {
     setRefreshing(true);
     refreshMovies().finally(() => setRefreshing(false));
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshMovies();
+    }, [])
+  );
 
   const handleAddMovie = () => router.push('/manage-movie');
 
